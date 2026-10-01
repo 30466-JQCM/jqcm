@@ -248,7 +248,7 @@
   @keyframes resourcePop { 0%{transform:scale(1)} 45%{transform:scale(1.28);text-shadow:0 0 14px currentColor} 100%{transform:scale(1)} }
 
   /* 主导航 */
-  .tabs { position:sticky; top:58px; z-index:45; display:grid; grid-template-columns:repeat(11,minmax(0,1fr)); gap:5px; margin:10px 0; padding:6px; border:1px solid rgba(133,168,200,.14); border-radius:13px; background:rgba(7,13,22,.90); backdrop-filter:blur(10px); box-shadow:0 8px 24px rgba(0,0,0,.22); }
+  .tabs { position:sticky; top:58px; z-index:45; display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:5px; margin:10px 0; padding:6px; border:1px solid rgba(133,168,200,.14); border-radius:13px; background:rgba(7,13,22,.90); backdrop-filter:blur(10px); box-shadow:0 8px 24px rgba(0,0,0,.22); }
   .tabs button { min-width:0; min-height:38px; border-color:transparent; background:transparent; color:#8594a8; font-size:11px; }
   .tabs button.active { color:#fff3c2; background:linear-gradient(180deg,rgba(126,93,31,.68),rgba(63,47,22,.72)); border-color:rgba(242,207,120,.42); box-shadow:inset 0 0 18px rgba(242,207,120,.08),0 0 14px rgba(242,207,120,.08); }
   .subtabs { padding:4px; border-radius:10px; background:rgba(5,10,17,.48); }
@@ -492,6 +492,28 @@
     background:color-mix(in srgb,var(--ring) 14%,rgba(9,16,26,.7)); }
   .boss-big-card { border-color:#bd5960; background:linear-gradient(180deg,#482429,#241014); box-shadow:0 0 45px rgba(218,72,83,.26); animation:bossBreath 2.2s ease-in-out infinite alternate; }
   @keyframes bossBreath{to{transform:scale(1.015);box-shadow:0 0 65px rgba(218,72,83,.32)}}
+
+  /* ===== 角色图鉴 ===== */
+  .codex-sum { font-size:12px; color:#c9d3e0; margin-bottom:6px; }
+  .codex-sum b { color:#f0c674; font-size:14px; }
+  .codex-bars { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
+  .codex-bar { font-size:10px; padding:3px 7px; border:1px solid #42424d; border-radius:999px; background:#1e1e26; }
+  .codex-actions { display:flex; gap:5px; flex-wrap:wrap; }
+  .codex-actions button.active { border-color:#f0c674; color:#f0c674; box-shadow:0 0 10px rgba(240,198,116,.18); }
+  .codex-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:7px; }
+  .codex-card { position:relative; background:linear-gradient(180deg,rgba(30,32,42,.96),rgba(17,19,26,.96)); border:1px solid rgba(var(--rarity,240,198,116),.42); border-radius:10px; padding:8px 6px; text-align:center; cursor:pointer; transition:transform .12s, box-shadow .12s; }
+  .codex-card:active { transform:scale(.97); }
+  .codex-card:hover { box-shadow:0 0 16px rgba(var(--rarity,240,198,116),.25); }
+  .codex-card.locked { filter:grayscale(.85) brightness(.66); }
+  .codex-card.locked .codex-lock { display:block; }
+  .codex-avatar { width:38px; height:38px; margin:0 auto 4px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; background:#14141a; border:2px solid rgba(var(--rarity,240,198,116),.65); }
+  .codex-name { font-size:12px; font-weight:700; color:#eef2f7; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .codex-q { font-size:10px; margin-top:1px; }
+  .codex-power { font-size:10px; color:#9fb0c2; margin-top:2px; }
+  .codex-skill { font-size:9px; color:#8b98a8; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .codex-lock { display:none; position:absolute; top:5px; right:5px; font-size:9px; color:#ffb3b3; background:rgba(60,20,24,.85); border:1px solid rgba(220,90,100,.5); border-radius:6px; padding:1px 4px; }
+  .codex-preview { margin-top:6px; font-size:11px; color:#ffd9a0; }
+  @media (max-width:520px) { .codex-grid { grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:6px; } }
 
   /* ===== 角色属性面板（全量属性） ===== */
   .stat-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:6px 0 8px; }
@@ -784,6 +806,7 @@
     <button data-tab="grow" onclick="switchTab('grow')">🎓 养成</button>
     <button data-tab="soul" onclick="switchTab('soul')">🧿 武魂</button>
     <button data-tab="tower" onclick="switchTab('tower')">🏛️ 传灵塔</button>
+    <button data-tab="codex" onclick="switchTab('codex')">📖 图鉴</button>
   </div>
 
   <!-- ============ 战斗页 ============ -->
@@ -953,6 +976,17 @@
     <div class="card">
       <h2>🧮 武魂总览</h2>
       <div id="soulOverview" class="mini"></div>
+    </div>
+  </div>
+
+  <!-- ============ 角色图鉴页 ============ -->
+  <div class="tab-page" id="tab-codex">
+    <div class="card">
+      <h2>📖 角色图鉴</h2>
+      <div id="codexHead"></div>
+    </div>
+    <div class="card">
+      <div id="codexGrid" class="codex-grid mini">加载中…</div>
     </div>
   </div>
 
@@ -1204,6 +1238,10 @@ const PARTNERS = [
   { name: '混沌魔祖', quality: 'gold', power: 8500, skillName: '万魔朝宗', desc: '全体 450% 伤害，附加混乱 3 回合',     effect: 'hundun' },
   { name: '女娲',     quality: 'gold', power: 7800, skillName: '造化之力', desc: '全队回满血，复活 1 名阵亡队友',      effect: 'nv_wa' },
   { name: '盘古',     quality: 'gold', power: 9500, skillName: '混沌开天', desc: '单体 800% 伤害，无视防御和护盾',     effect: 'pan_gu' },
+  { name: '唐舞麟',   quality: 'red',  power: 9800,  skillName: '龙皇破天击',   desc: '全体 350% 伤害；最高血目标追加 500%；暴击 +30%；击杀再动并永久 +10% 攻击（最多 5 层）；残血伤害 ×2', effect: 'tang_wulin' },
+  { name: '古月娜',   quality: 'red',  power: 9600,  skillName: '银龙皓月',     desc: '全体 300% 伤害；50% 冰冻全体 2 回合；全队回血 25%、能量 +30；冰冻 ≥3 人全队获得 2 回合护盾；每次释放永久 +15% 攻击（最多 3 层）', effect: 'gu_yuena' },
+  { name: '楪祈',     quality: 'red',  power: 12000, skillName: '虚空·终焉之剑', desc: '全体 500% 真伤，无视防御/护盾/减伤/无敌；低血目标翻倍；击杀回满能量并再动、全队回血 15% + 1 回合无敌；被击杀目标不可复活；残血觉醒最高 ×3', effect: 'die_qi' },
+  { name: '强袭自由', quality: 'gold', power: 11000, skillName: '龙骑兵·全弹发射', desc: '全体 320% 伤害；随机 5 次追加 180%（可重复）；暴击 +40%；击杀回满能量并永久 +15% 攻击（最多 5 层）；残血伤害 ×2；单次击杀 ≥3 人立即再动', effect: 'strike_freedom' },
   { name: '太一',     quality: 'gold', power: 8200, skillName: '天衍神算', desc: '全队攻击 +80%，暴击 +30%，免疫控制 3 回合', effect: 'tai_yi' }
 ];
 
@@ -2843,6 +2881,7 @@ function switchTab(tab) {
   if (tab === 'xiantu') renderXiantu();
   if (tab === 'soul') renderSoul();
   if (tab === 'tower') renderTower();
+  if (tab === 'codex') renderCodex();
   if (tab === 'grow') { renderGrowSelect(); renderGrowPanel(); }
 }
 
@@ -7166,7 +7205,8 @@ function renderCharDetail() {
       <div class="mini">防御 Lv.${(G.charGrow[c] || {}).shenfa || 0} · 神识 Lv.${(G.charGrow[c] || {}).shenshi || 0} · 技能 Lv.${(G.charGrow[c] || {}).skillLv || 1}</div>
     </div>
 
-    <div class="detail-actions">
+    ${(!isHero && !(G.partners || []).includes(c)) ? '<div class="codex-preview">🔒 尚未获得该角色 · 可通过「伙伴召唤」获取，获得后即可养成、上阵与装备</div>' : ''}
+    <div class="detail-actions" ${(!isHero && !(G.partners || []).includes(c)) ? 'style="display:none;"' : ''}>
       <button class="primary" onclick="detailGoGrow()">🎓 前往养成</button>
       <button onclick="detailGoFabao()">🗡️ 配置法宝</button>
       <button onclick="detailGoSoul()">🧿 配置武魂</button>
@@ -8054,7 +8094,24 @@ const SKILL_REFORGE = {
   hundun:{mul:4.50,mode:'aoe',fx:'chaos',stunChance:.55,stun:2,desc:'全体 450% 混沌魔伤；55% 概率陷入混乱/眩晕 2 回合'},
   nv_wa:{mul:2.40,mode:'aoe',fx:'creation',fullHeal:true,revive:true,desc:'全体 240% 造化神光；全队回满生命并复活 1 名队友至 40% 生命'},
   pan_gu:{mul:8.00,mode:'singleHighHp',fx:'divineAxe',guaranteedCrit:true,desc:'单体 800% 混沌开天真伤；本次视为暴击'},
-  tai_yi:{mul:3.20,mode:'aoe',fx:'starDivine',atkBuff:3,critBless:3,teamEnergy:30,desc:'全体 320% 天衍神光；全队攻击提升、暴击 +30%，并回复 30 能量'}
+  tai_yi:{mul:3.20,mode:'aoe',fx:'starDivine',atkBuff:3,critBless:3,teamEnergy:30,desc:'全体 320% 天衍神光；全队攻击提升、暴击 +30%，并回复 30 能量'},
+
+  /* ===== 新角色：唐舞麟 / 古月娜 / 楪祈 / 强袭自由 ===== */
+  tang_wulin:{mul:3.50,mode:'aoe',fx:'divineAxe',critSelfBonus:.30,critSelfTurns:3,
+    extraHighestHp:5.00,onKillPermaAtk:.10,permaAtkMax:5,onKillExtraTurn:true,
+    lowHpSelfAt:.35,lowHpSelfMul:2.0,
+    desc:'全体 350% 龙皇伤害；对最高生命目标追加 500% 单体；自身暴击 +30%（3 回合）；击杀后立即再动、永久 +10% 攻击（最多 5 层）；自身血量低于 35% 时释放伤害 ×2'},
+  gu_yuena:{mul:3.00,mode:'aoe',fx:'iceSword',freezeChance:.50,freeze:2,healAll:.25,teamEnergy:30,
+    shieldAllIfFreeze:3,shieldAllIfFreezeTurns:2,permaAtkCast:.15,permaAtkCastMax:3,
+    desc:'全体 300% 银龙伤害；50% 冰冻全体 2 回合；全队回复 25% 生命、能量 +30；冰冻 ≥3 人时全队获得 2 回合护盾；每次释放永久 +15% 攻击（最多 3 层）'},
+  die_qi:{mul:5.00,mode:'aoe',fx:'divine',trueDamage:true,noRevive:true,
+    lowHpTargetAt:.50,lowHpTargetMul:2.0,lowHpSelfAt:.20,lowHpSelfMul:3.0,
+    onKillEnergyFull:true,onKillExtraTurn:true,onKillHealAll:.15,onKillInvincibleAll:1,
+    desc:'全体 500% 虚空真伤，无视防御 / 护盾 / 减伤 / 无敌；低血目标伤害翻倍；每次击杀回满能量并立即再动、全队回复 15% 生命并获得 1 回合无敌；被击杀目标不可复活；自身血量低于 20% 时觉醒，伤害最高 ×3'},
+  strike_freedom:{mul:3.20,mode:'aoe',fx:'thunder',critSelfBonus:.40,critSelfTurns:3,
+    extraRandomCount:5,extraRandomMul:1.80,onKillEnergyFull:true,onKillPermaAtk:.15,permaAtkMax:5,
+    lowHpSelfAt:.35,lowHpSelfMul:2.0,onKillCountExtraTurn:3,
+    desc:'全体 320% 全弹发射；随机 5 次追加 180%（可重复命中同一目标）；自身暴击 +40%（3 回合）；击杀回满能量、永久 +15% 攻击（最多 5 层）；自身血量低于 35% 时伤害 ×2；单次击杀 ≥3 人立即再动'}
 };
 PARTNERS.forEach(p=>{ const b=SKILL_REFORGE[p.effect]; if(b){ p.desc=b.desc; p.damageProfile=b; } });
 
@@ -8064,7 +8121,11 @@ function skillLevelScale(unit){
 function daoSkillMul(){ return getDaoPath().key==='sword'?1.06:1; }
 function daoHealMul(){ return getDaoPath().key==='life'?1.25:1; }
 function unitAtkMul(unit){ return unit&&unit.buff&&unit.buff.atkUp>0?1.40:1; }
-function currentCrit(unit, extra){ return Math.max(0,Math.min(.95,(unit.crit||0)+(unit._critBless>0?.30:0)+(extra||0))); }
+function currentCrit(unit, extra){
+  const self=(unit&&unit._critTurns>0)?(unit._critBonus||0):0;
+  const bless=(unit&&unit._critBless>0)?.30:0;
+  return Math.max(0,Math.min(.95,(unit.crit||0)+Math.max(self,bless)+(extra||0)));
+}
 function showStatusFloat(unit,text,color){
   const r=unitRect(unit); if(!r) return; const d=document.createElement('div'); d.className='fx-status-float'; d.textContent=text; d.style.color=color||'#a9d8ff'; d.style.left=(r.left+r.width/2-24)+'px'; d.style.top=(r.top+8)+'px'; fxLayer().appendChild(d); setTimeout(()=>d.remove(),900);
 }
@@ -8072,6 +8133,7 @@ function setControl(t,key,turns){ if(!t||!t.alive) return false; if(t._controlIm
 function addDot(t,type,turns,dmg,label,color){ if(!t||!t.alive) return; if(!t._dots)t._dots=[]; t._dots.push({type,turns,dmg:Math.max(1,Math.floor(dmg)),label:label||type,color:color||'#ff9d6b'}); showStatusFloat(t,label||'持续伤害',color); }
 function applySkillDamage(unit,t,mul,opt){
   if(!t||!t.alive) return 0; opt=opt||{};
+  if(t.buff&&t.buff.invincible>0&&!opt.trueDamage){ showStatusFloat(t,'无敌','#ffe27a'); return 0; }
   let dmg=unit.atk*(mul||1)*skillLevelScale(unit)*daoSkillMul()*unitAtkMul(unit)*(1+(unit.dmgUp||0))*goldSkillMul(unit);
   if(targetHasVulnerability(t)) dmg*=1+(t._dmgUp||0);
   if(t.dmgReduce&&!opt.ignoreReduce) dmg*=Math.max(.2,1-t.dmgReduce);
@@ -8178,6 +8240,12 @@ useSkill = function(unit,enemies){
   if(unit.isHero){ heroSkill(unit,enemies); return; }
   if(!b){ const t=pickTargetFromAlive(enemies); if(t){const d=applySkillDamage(unit,t,1.55);log(`  ${t.name} 受到 ${d} 伤害。`);} return; }
 
+  /* ===== 新机制上下文：本次释放的击杀数 / 冰冻数 / 不可复活 ===== */
+  __skillCtx={kills:0,freezeCount:0,noRevive:!!b.noRevive,trueDamage:!!b.trueDamage};
+  const selfLow=!!(b.lowHpSelfAt&&unit.hp/unit.maxHp<b.lowHpSelfAt);
+  const selfMul=selfLow?(b.lowHpSelfMul||1):1;
+  if(selfLow) showStatusFloat(unit,'残血觉醒 ×'+selfMul,'#ff9d6b');
+
   let targets=[];
   if(b.mode==='aoe') targets=enemies.slice();
   else if(b.mode==='two') targets=randomTargets(enemies,2);
@@ -8185,16 +8253,21 @@ useSkill = function(unit,enemies){
   else if(b.mode==='singleHighHp'||b.mode==='execute') targets=[pickHighestHp(enemies)];
   else targets=[pickTargetFromAlive(enemies)];
 
+  const baseMul=(b.mul||1)*selfMul;
+  const dmgOpt={critBonus:b.critBonus,guaranteedCrit:b.guaranteedCrit,
+    ignoreShield:b.ignoreShield||b.trueDamage,ignoreReduce:b.ignoreReduce||b.trueDamage,trueDamage:b.trueDamage};
+  const mulFor=t=>baseMul*((b.lowHpTargetAt&&t&&t.alive&&t.hp/t.maxHp<b.lowHpTargetAt)?(b.lowHpTargetMul||1):1);
   if(b.mode==='execute'){
     const t=enemies.slice().sort((a,c)=>a.hp/a.maxHp-c.hp/c.maxHp)[0]; targets=[t];
-    if(t&&t.hp/t.maxHp<(b.execute||.25)){showStatusFloat(t,'斩杀','#ff7d89');t.hp=0;killUnit(t);} else if(t)applySkillDamage(unit,t,b.mul,{critBonus:b.critBonus,guaranteedCrit:b.guaranteedCrit});
+    if(t&&t.hp/t.maxHp<(b.execute||.25)){showStatusFloat(t,'斩杀','#ff7d89');t.hp=0;killUnit(t);} else if(t)applySkillDamage(unit,t,mulFor(t),dmgOpt);
   } else if(b.pct){ targets.forEach(t=>applyPercentDamage(unit,t,b.pct)); }
-  else targets.filter(Boolean).forEach(t=>applySkillDamage(unit,t,b.mul,{critBonus:b.critBonus,guaranteedCrit:b.guaranteedCrit,ignoreShield:b.ignoreShield,ignoreReduce:b.ignoreReduce}));
+  else targets.filter(Boolean).forEach(t=>applySkillDamage(unit,t,mulFor(t),dmgOpt));
 
   const livingTargets=targets.filter(Boolean);
   livingTargets.forEach(t=>{
     if(!t.alive)return;
-    if(b.freeze) setControl(t,'freeze',b.freeze); else if(b.freezeChance&&Math.random()<b.freezeChance)setControl(t,'freeze',b.freeze||2);
+    if(b.freeze){ if(setControl(t,'freeze',b.freeze)) __skillCtx.freezeCount++; }
+    else if(b.freezeChance&&Math.random()<b.freezeChance){ if(setControl(t,'freeze',b.freeze||2)) __skillCtx.freezeCount++; }
     if(b.stun) setControl(t,'stun',b.stun); else if(b.stunChance&&Math.random()<b.stunChance)setControl(t,'stun',b.stun||2);
     if(b.silence) setControl(t,'silence',b.silence); else if(b.silenceChance&&Math.random()<b.silenceChance)setControl(t,'silence',b.silence||2);
     if(b.energyCut) t.energy=Math.max(0,t.energy-b.energyCut);
@@ -8208,7 +8281,7 @@ useSkill = function(unit,enemies){
   if(b.heal){ const allies=livingAllies(); if(allies.length) healOne(allies.reduce((a,c)=>a.hp/a.maxHp<c.hp/c.maxHp?a:c),b.heal*gh); }
   if(b.healAll) livingAllies().forEach(a=>healOne(a,b.healAll*gh));
   if(b.fullHeal) livingAllies().forEach(a=>healOne(a,1));
-  if(b.revive&&battle){ const dead=battle.allies.filter(a=>!a.alive); if(dead.length){const r=dead[0];r.alive=true;r.hp=Math.floor(r.maxHp*.40);showStatusFloat(r,'造化复生','#7cf1bb');spawnLotusAt(r);} }
+  if(b.revive&&battle){ const dead=battle.allies.filter(a=>!a.alive&&!a._noRevive); if(dead.length){const r=dead[0];r.alive=true;r.hp=Math.floor(r.maxHp*.40);showStatusFloat(r,'造化复生','#7cf1bb');spawnLotusAt(r);} }
   if(b.cleanse) livingAllies().forEach(a=>{a.buff.freeze=0;a.buff.stun=0;a.buff.silence=0;});
   if(b.shieldSelf) unit.buff.shield=Math.max(unit.buff.shield||0,b.shieldSelf);
   if(b.shieldAll) livingAllies().forEach(a=>a.buff.shield=Math.max(a.buff.shield||0,b.shieldAll));
@@ -8218,6 +8291,42 @@ useSkill = function(unit,enemies){
   if(b.critBless) livingAllies().forEach(a=>a._critBless=Math.max(a._critBless||0,b.critBless));
   if(b.counter) unit._counter=Math.max(unit._counter||0,b.counter);
   if(b.lifeSteal){ const hits=targets.length; healOne(unit,b.lifeSteal*hits); }
+
+  /* ===== 新角色机制结算 ===== */
+  const kills=__skillCtx?__skillCtx.kills:0;
+  const frozen=__skillCtx?__skillCtx.freezeCount:0;
+  if(b.shieldAllIfFreeze&&frozen>=(b.shieldAllIfFreeze||3)){
+    livingAllies().forEach(a=>{a.buff.shield=Math.max(a.buff.shield||0,b.shieldAllIfFreezeTurns||2);});
+    showStatusFloat(unit,`冰封 ${frozen} 人 · 全队护盾`,'#9fe6ff');
+  }
+  if(b.critSelfBonus){
+    unit._critBonus=Math.max(unit._critBonus||0,b.critSelfBonus);
+    unit._critTurns=Math.max(unit._critTurns||0,b.critSelfTurns||3);
+    showStatusFloat(unit,'暴击 +'+Math.round(b.critSelfBonus*100)+'%','#ffd479');
+  }
+  if(b.extraHighestHp){ const pool=enemies.filter(x=>x.alive); const t=pool.length?pickHighestHp(pool):null; if(t) applySkillDamage(unit,t,b.extraHighestHp*selfMul,dmgOpt); }
+  if(b.extraRandomCount){
+    for(let i=0;i<b.extraRandomCount;i++){
+      const pool=enemies.filter(x=>x.alive); if(!pool.length)break;
+      applySkillDamage(unit,pool[Math.floor(Math.random()*pool.length)],b.extraRandomMul*selfMul,dmgOpt);
+    }
+  }
+  if(b.permaAtkCast){
+    const st=unit._permaAtkCast||0;
+    if(st<(b.permaAtkCastMax||3)){ unit._permaAtkCast=st+1; unit.atk=Math.max(1,Math.floor(unit.atk*(1+b.permaAtkCast))); showStatusFloat(unit,'龙威 +'+Math.round(b.permaAtkCast*100)+'%','#ffd479'); }
+  }
+  if(kills>0){
+    if(b.onKillPermaAtk){
+      const st=unit._permaAtkKill||0, add=Math.min((b.permaAtkMax||5)-st,kills);
+      if(add>0){ unit._permaAtkKill=st+add; for(let i=0;i<add;i++) unit.atk=Math.max(1,Math.floor(unit.atk*(1+b.onKillPermaAtk))); showStatusFloat(unit,`击杀强化 ×${unit._permaAtkKill}`,'#ffb36b'); }
+    }
+    if(b.onKillHealAll) livingAllies().forEach(a=>healOne(a,b.onKillHealAll*kills));
+    if(b.onKillInvincibleAll) livingAllies().forEach(a=>{ a.buff.invincible=Math.max(a.buff.invincible||0,b.onKillInvincibleAll); showStatusFloat(a,'无敌','#ffe27a'); });
+    if(b.onKillEnergyFull) unit._energyRefill=true;
+    const need=b.onKillCountExtraTurn||0;
+    if(b.onKillExtraTurn||(need&&kills>=need)){ unit._extraTurn=true; showStatusFloat(unit,'再动','#ffe27a'); }
+  }
+  __skillCtx=null;
 
   log(`  ${b.desc}`);
 };
@@ -8236,7 +8345,12 @@ heroSkill = function(unit,enemies){
 allyAct = function(unit){
   const enemies=aliveEnemies(); if(!enemies.length)return;
   if(unit.fabaoSkills&&unit.fabaoSkills.length&&unit.energy>=unit.energyMax&&unit.buff.silence<=0){useFabaoSkill(unit,unit.fabaoSkills[0],enemies);unit.energy=0;return;}
-  if(unit.energy>=unit.energyMax&&unit.buff.silence<=0){useSkill(unit,enemies);unit.energy=0;return;}
+  if(unit.energy>=unit.energyMax&&unit.buff.silence<=0){
+    useSkill(unit,enemies);
+    unit.energy=unit._energyRefill?unit.energyMax:0; unit._energyRefill=false;
+    if(unit._extraTurn){ unit._extraTurn=false; if(battle&&!battle.over){ battle.turnQueue.unshift(unit.id); log(`  ${unit.name} 立即再动！`); } }
+    return;
+  }
   const target=enemies[Math.floor(Math.random()*enemies.length)], crit=Math.random()<currentCrit(unit,0); playAttackFx(unit,target,crit?'crit':'basic');
   let dmg=unit.atk*unitAtkMul(unit)*(crit?(2*(1+(unit.critDmg||0))):1)*(1+(unit.dmgUp||0)); if(target._dmgUp)dmg*=1+target._dmgUp; if(target.buff&&target.buff.shield>0)dmg*=.78; dmg=Math.floor(dmg); target.hp-=dmg;showDmgFloat(target,dmg,crit);applySoulLifesteal(unit,dmg);log(`${unit.name} 御气攻击 ${target.name}，${dmg} 伤害${crit?'（暴击）':''}。`); if(target.hp<=0)killUnit(target);
   const dao=getDaoPath().key;
@@ -8245,8 +8359,20 @@ allyAct = function(unit){
 };
 
 enemyAct = function(unit){
-  const allies=aliveAllies();if(!allies.length)return;let target=allies.find(a=>a.isHero&&G.race==='妖'&&a.buff.shield>0)||pickTargetFromAlive(allies);if(!target)return;playAttackFx(unit,target,'enemy');let dmg=unit.atk;if(target.dmgReduce)dmg*=1-target.dmgReduce;if(target.buff.shield>0){dmg*=.5;if(target.isHero&&G.race==='妖')dmg*=.5;}dmg*=defMultiplier(target,dmg);dmg=Math.max(1,Math.floor(dmg));target.hp-=dmg;showDmgFloat(target,dmg,false);log(`${unit.name} 妖煞扑击 ${target.name}，${dmg} 伤害。`);
+  const allies=aliveAllies();if(!allies.length)return;let target=allies.find(a=>a.isHero&&G.race==='妖'&&a.buff.shield>0)||pickTargetFromAlive(allies);if(!target)return;
+  if(target.buff&&target.buff.invincible>0){showStatusFloat(target,'无敌','#ffe27a');log(`  ${target.name} 处于无敌，免疫本次攻击。`);return;}
+  playAttackFx(unit,target,'enemy');let dmg=unit.atk;if(target.dmgReduce)dmg*=1-target.dmgReduce;if(target.buff.shield>0){dmg*=.5;if(target.isHero&&G.race==='妖')dmg*=.5;}dmg*=defMultiplier(target,dmg);dmg=Math.max(1,Math.floor(dmg));target.hp-=dmg;showDmgFloat(target,dmg,false);log(`${unit.name} 妖煞扑击 ${target.name}，${dmg} 伤害。`);
   const reflect=(target._counter||0)+(getDaoPath().key==='guard'&&Math.random()<.22?.35:0); if(reflect>0&&unit.alive){const rd=Math.floor(dmg*reflect);unit.hp-=rd;showDmgFloat(unit,rd,false);showStatusFloat(unit,'反震','#e4c17e');spawnEarthAt(unit,2);if(unit.hp<=0)killUnit(unit);} if(target.hp<=0)killUnit(target);
+};
+
+/* 击杀计数（供击杀类机制结算）与「不可复活」标记 */
+const __killUnitLegacy = killUnit;
+killUnit = function(u){
+  if(u && u.alive){
+    if(__skillCtx){ __skillCtx.kills++; if(__skillCtx.noRevive) u._noRevive=true; }
+    else if(u._noReviveMark) u._noRevive=true;
+  }
+  __killUnitLegacy(u);
 };
 
 /* 持续伤害 / 控免 / 暴击祝福进入回合循环 */
@@ -8259,7 +8385,7 @@ battleStep = function(){
       if(!u.alive)return;
       if(u._dots&&u._dots.length){u._dots=u._dots.filter(dot=>{if(!u.alive)return false;const d=Math.min(Math.floor(u.maxHp*.16),Math.max(1,dot.dmg));u.hp-=d;showDmgFloat(u,d,false);showStatusFloat(u,dot.label,dot.color);if(dot.type==='burn')spawnFlamesAt(u,3);else if(dot.label==='蛇毒')spawnVenomAt(u);else spawnStarsAt(u,2);dot.turns--;if(u.hp<=0)killUnit(u);return dot.turns>0&&u.alive;});}
       if(!u.alive)return;
-       ['freeze','stun','silence','shield','atkUp'].forEach(k=>{if(u.buff[k]>0)u.buff[k]--;}); if(u._controlImmune>0)u._controlImmune--; if(u._critBless>0)u._critBless--; if(u._counter>0&&u.buff.shield<=0)u._counter=0;
+       ['freeze','stun','silence','shield','atkUp','invincible'].forEach(k=>{if(u.buff[k]>0)u.buff[k]--;}); if(u._controlImmune>0)u._controlImmune--; if(u._critBless>0)u._critBless--; if(u._critTurns>0)u._critTurns--; if(u._counter>0&&u.buff.shield<=0)u._counter=0;
       if(!u._noEnergy||u._noEnergy<=0)u.energy=Math.min(u.energyMax,u.energy+(u.energyRegen||20));else u._noEnergy--;
     });
     checkBattleEnd(); if(!battle||battle.over)return; buildTurnQueue(); log(`—— 第 ${battle.round+1} 回合 · 灵机流转 ——`); renderBattle(); return;
@@ -8270,6 +8396,63 @@ battleStep = function(){
 /* 技能升级成功时强化字幕反馈 */
 const __ultimateUpgradeSkill = upgradeSkill;
 upgradeSkill = function(charKey){ const before=((G.charGrow[charKey]||{}).skillLv||1); __ultimateUpgradeSkill(charKey); const after=((G.charGrow[charKey]||{}).skillLv||1); if(after>before){const n=charKey==='hero'?G.heroName:charKey;showWorldCaption('仙术精进',`${n} · 技能 Lv.${after} · 伤害 +${(after-1)*6}%`,'blue',1350);} };
+
+/* ==================== 角色图鉴 ==================== */
+let codexFilter = 'all';
+const CODEX_Q_ORDER = ['gold', 'red', 'orange', 'purple', 'blue', 'green', 'gray'];
+
+function codexOwned(name){ return (G.partners || []).includes(name); }
+
+function codexCardHtml(name, isHero){
+  const isOwned = isHero || codexOwned(name);
+  const p = isHero ? null : findPartner(name);
+  if (!isHero && !p) return '';
+  const q = isHero ? qualityOf(G.heroQuality) : getCharQuality(name);
+  const power = isHero ? heroRawPower() : partnerRawPower(name);
+  const skillName = isHero ? RACES[G.race].heroSkillName : p.skillName;
+  return `<div class="codex-card ${isOwned ? '' : 'locked'}" style="--rarity:${rarityHex(q.key)}" onclick="codexOpen('${name}')">
+    <div class="codex-avatar">${avatarGlyph(name, isHero ? 'hero' : 'ally')}</div>
+    <div class="codex-name">${isHero ? '👑 ' : ''}${name}</div>
+    <div class="codex-q ${q.color}">${q.name}</div>
+    <div class="codex-power">战力 ${fmtNum(power)}</div>
+    <div class="codex-skill">【${skillName}】</div>
+    ${isOwned ? '' : '<div class="codex-lock">未获得</div>'}
+  </div>`;
+}
+
+function renderCodex(){
+  const grid = document.getElementById('codexGrid');
+  const head = document.getElementById('codexHead');
+  if (!grid || !head || !G) return;
+  const all = PARTNERS.slice().sort((a, b) =>
+    (CODEX_Q_ORDER.indexOf(a.quality) - CODEX_Q_ORDER.indexOf(b.quality)) || (b.power - a.power));
+  const ownedN = all.filter(x => codexOwned(x.name)).length;
+  const total = all.length + 1;
+  const stat = {};
+  all.forEach(x => { const s = stat[x.quality] || (stat[x.quality] = { own: 0, all: 0 }); s.all++; if (codexOwned(x.name)) s.own++; });
+  const pct = Math.round((ownedN + 1) / total * 100);
+
+  head.innerHTML = `<div class="codex-sum">已收集 <b>${ownedN + 1}</b> / ${total} 名角色 · 完成度 <b>${pct}%</b></div>
+    <div class="codex-bars">${CODEX_Q_ORDER.filter(q => stat[q]).map(q => {
+      const s = stat[q];
+      return `<span class="codex-bar ${qualityByKey(q).color}">${qualityByKey(q).name} ${s.own}/${s.all}</span>`;
+    }).join('')}</div>
+    <div class="codex-actions">
+      <button class="small ${codexFilter === 'all' ? 'active' : ''}" onclick="codexFilter='all';renderCodex()">全部 ${total}</button>
+      <button class="small ${codexFilter === 'owned' ? 'active' : ''}" onclick="codexFilter='owned';renderCodex()">已获得 ${ownedN + 1}</button>
+      <button class="small ${codexFilter === 'locked' ? 'active' : ''}" onclick="codexFilter='locked';renderCodex()">未获得 ${all.length - ownedN}</button>
+    </div>
+    <div class="mini" style="margin-top:5px;">点任意角色查看技能与属性；未获得的角色显示灰色，可预览技能效果。</div>`;
+
+  const list = all.filter(x => codexFilter === 'all' ? true : (codexFilter === 'owned' ? codexOwned(x.name) : !codexOwned(x.name)));
+  const cards = (codexFilter === 'locked' ? '' : codexCardHtml('hero', true)) + list.map(x => codexCardHtml(x.name, false)).join('');
+  grid.innerHTML = cards || '<div class="mini">该分类下暂无角色。</div>';
+}
+
+function codexOpen(name){
+  detailCharKey = name;
+  renderCharDetail();
+}
 
 /* 存档载入后保证新系统存在 */
 window.addEventListener('load',()=>{setTimeout(()=>{if(G){ensureUltimateState();renderDaoPathPanel();}},120);});
@@ -8295,15 +8478,38 @@ bossAllyAct = function(unit){
   const boss=bossBattle&&bossBattle.boss;if(!boss||!boss.alive)return;
   if(unit.fabaoSkills&&unit.fabaoSkills.length&&unit.energy>=unit.energyMax&&unit.buff.silence<=0){const fb=unit.fabaoSkills[0];bossBattle.log.push(`🗡️ ${unit.name} 催动【${fb.name}】！`);playAttackFx(unit,boss,'crit');const d=Math.floor(unit.atk*2.3);boss.hp-=d;showDmgFloat(boss,d,false);bossBattle.log.push(`  ${boss.name} 受到 ${d} 法宝伤害。`);unit.energy=0;return;}
   if(unit.energy>=unit.energyMax&&unit.buff.silence<=0){
-    const sk=unit.skill||{},b=SKILL_REFORGE[sk.effect]||{mul:1.8,fx:'sword',desc:'灵力爆发'}; playSkillFx(unit,sk.name||'技能',sk.effect||''); fxOnTarget(unit,boss,b.fx||'sword',0); const d=bossSkillDamage(unit,boss,b); bossBattle.log.push(`✨ ${unit.name}【${sk.name||'技能'}】造成 ${d} 伤害。`);
+    const sk=unit.skill||{},b=SKILL_REFORGE[sk.effect]||{mul:1.8,fx:'sword',desc:'灵力爆发'}; playSkillFx(unit,sk.name||'技能',sk.effect||''); fxOnTarget(unit,boss,b.fx||'sword',0);
+    __skillCtx={kills:0,freezeCount:0,noRevive:!!b.noRevive,trueDamage:!!b.trueDamage};
+    const __selfLow=!!(b.lowHpSelfAt&&unit.hp/unit.maxHp<b.lowHpSelfAt);
+    const __bMul=__selfLow?Object.assign({},b,{mul:(b.mul||1)*(b.lowHpSelfMul||1)}):b;
+    if(__selfLow) showStatusFloat(unit,'残血觉醒 ×'+(b.lowHpSelfMul||1),'#ff9d6b');
+    const d=bossSkillDamage(unit,boss,__bMul); bossBattle.log.push(`✨ ${unit.name}【${sk.name||'技能'}】造成 ${d} 伤害。`);
     const allies=bossBattle.allies.filter(a=>a.alive);
     const ghm=goldSkillMul(unit);
     if(b.heal){const t=allies.reduce((a,c)=>a.hp/a.maxHp<c.hp/c.maxHp?a:c);bossHealOne(t,b.heal*ghm);}
     if(b.healAll)allies.forEach(a=>bossHealOne(a,b.healAll*ghm)); if(b.fullHeal)allies.forEach(a=>bossHealOne(a,1));
     if(b.cleanse)allies.forEach(a=>{a.buff.freeze=0;a.buff.stun=0;a.buff.silence=0;}); if(b.shieldSelf)unit.buff.shield=Math.max(unit.buff.shield||0,b.shieldSelf); if(b.shieldAll)allies.forEach(a=>a.buff.shield=Math.max(a.buff.shield||0,b.shieldAll)); if(b.atkBuff)allies.forEach(a=>a.buff.atkUp=Math.max(a.buff.atkUp||0,b.atkBuff)); if(b.teamEnergy)allies.forEach(a=>a.energy=Math.min(a.energyMax,a.energy+b.teamEnergy)); if(b.critBless)allies.forEach(a=>a._critBless=Math.max(a._critBless||0,b.critBless)); if(b.controlImmune)allies.forEach(a=>a._controlImmune=Math.max(a._controlImmune||0,b.controlImmune)); if(b.counter)unit._counter=Math.max(unit._counter||0,b.counter);
     if(b.dotAtk){if(!boss._dots)boss._dots=[];boss._dots.push({turns:b.dotTurns||2,dmg:Math.floor(unit.atk*b.dotAtk*skillLevelScale(unit)),label:'灼烧',color:'#ff8c5a'});} if(b.dotPct){if(!boss._dots)boss._dots=[];boss._dots.push({turns:b.dotTurns||2,dmg:Math.floor(boss.maxHp*Math.min(.02,b.dotPct)),label:sk.effect==='tianshe'?'蛇毒':'星蚀',color:'#99dc73'});}
-    if(b.revive){const dead=bossBattle.allies.filter(a=>!a.alive);if(dead.length){const r=dead[0];r.alive=true;r.hp=Math.floor(r.maxHp*.4);bossBattle.log.push(`🌿 ${r.name} 被造化之力复生。`);}}
-    unit.energy=0;return;
+    if(b.revive){const dead=bossBattle.allies.filter(a=>!a.alive&&!a._noRevive);if(dead.length){const r=dead[0];r.alive=true;r.hp=Math.floor(r.maxHp*.4);bossBattle.log.push(`🌿 ${r.name} 被造化之力复生。`);}}
+    /* ===== 新角色机制在 Boss 战同样结算 ===== */
+    const __bk=(__skillCtx&&__skillCtx.kills)||0, __fz=(__skillCtx&&__skillCtx.freezeCount)||0;
+    if(b.shieldAllIfFreeze&&__fz>=(b.shieldAllIfFreeze||3)) allies.forEach(a=>{a.buff.shield=Math.max(a.buff.shield||0,b.shieldAllIfFreezeTurns||2);});
+    if(b.critSelfBonus) allies.forEach(a=>{a._critBonus=Math.max(a._critBonus||0,b.critSelfBonus);a._critTurns=Math.max(a._critTurns||0,b.critSelfTurns||3);});
+    if(b.extraHighestHp&&boss.alive) bossSkillDamage(unit,boss,{mul:b.extraHighestHp*(__selfLow?(b.lowHpSelfMul||1):1)});
+    if(b.extraRandomCount&&boss.alive) for(let i=0;i<b.extraRandomCount;i++) bossSkillDamage(unit,boss,{mul:b.extraRandomMul});
+    if(b.permaAtkCast){const st=unit._permaAtkCast||0;if(st<(b.permaAtkCastMax||3)){unit._permaAtkCast=st+1;unit.atk=Math.max(1,Math.floor(unit.atk*(1+b.permaAtkCast)));}}
+    if(__bk>0){
+      if(b.onKillPermaAtk){const st=unit._permaAtkKill||0,add=Math.min((b.permaAtkMax||5)-st,__bk);if(add>0){unit._permaAtkKill=st+add;for(let i=0;i<add;i++)unit.atk=Math.max(1,Math.floor(unit.atk*(1+b.onKillPermaAtk)));}}
+      if(b.onKillHealAll) allies.forEach(a=>bossHealOne(a,b.onKillHealAll*__bk));
+      if(b.onKillInvincibleAll) allies.forEach(a=>{a.buff.invincible=Math.max(a.buff.invincible||0,b.onKillInvincibleAll);});
+      if(b.onKillEnergyFull) unit._energyRefill=true;
+      if(b.onKillExtraTurn) unit._extraTurn=true;
+    }
+    __skillCtx=null;
+
+    unit.energy=unit._energyRefill?unit.energyMax:0; unit._energyRefill=false;
+    if(unit._extraTurn){ unit._extraTurn=false; if(bossBattle&&!bossBattle.over){ bossBattle.turnQueue.unshift(unit.id); bossBattle.log.push(`  ${unit.name} 立即再动！`); } }
+    return;
   }
   const crit=Math.random()<currentCrit(unit,0);playAttackFx(unit,boss,crit?'crit':'basic');let d=Math.floor(unit.atk*unitAtkMul(unit)*(crit?2:1));boss.hp-=d;showDmgFloat(boss,d,crit);bossBattle.log.push(`${unit.name} 御气攻击，${d} 伤害${crit?'（暴击）':''}。`);
 };
@@ -8314,7 +8520,7 @@ bossStep = function(){
   if(bossBattle.turnQueue.length===0){
     bossBattle.round++;
     const all=[...bossBattle.allies,bossBattle.boss];
-    all.forEach(u=>{if(!u.alive)return;if(u._dots&&u._dots.length){u._dots=u._dots.filter(dot=>{const d=Math.max(1,Math.min(Math.floor(u.maxHp*.04),dot.dmg));u.hp-=d;showDmgFloat(u,d,false);showStatusFloat(u,dot.label,dot.color);dot.turns--;if(u.hp<=0){u.hp=0;u.alive=false;}return dot.turns>0&&u.alive;});}if(!u.alive)return;['freeze','stun','silence','shield','atkUp'].forEach(k=>{if(u.buff[k]>0)u.buff[k]--;});if(u._controlImmune>0)u._controlImmune--;if(u._critBless>0)u._critBless--;u.energy=Math.min(u.energyMax,u.energy+(u.energyRegen||20));});
+    all.forEach(u=>{if(!u.alive)return;if(u._dots&&u._dots.length){u._dots=u._dots.filter(dot=>{const d=Math.max(1,Math.min(Math.floor(u.maxHp*.04),dot.dmg));u.hp-=d;showDmgFloat(u,d,false);showStatusFloat(u,dot.label,dot.color);dot.turns--;if(u.hp<=0){u.hp=0;u.alive=false;}return dot.turns>0&&u.alive;});}if(!u.alive)return;['freeze','stun','silence','shield','atkUp','invincible'].forEach(k=>{if(u.buff[k]>0)u.buff[k]--;});if(u._controlImmune>0)u._controlImmune--;if(u._critBless>0)u._critBless--;if(u._critTurns>0)u._critTurns--;u.energy=Math.min(u.energyMax,u.energy+(u.energyRegen||20));});
     checkBossEnd();if(!bossBattle||bossBattle.over)return;buildBossTurnQueue();bossBattle.log.push(`—— 第 ${bossBattle.round+1} 回合 · 神通交锋 ——`);renderBossBattle();return;
   }
   const uid=bossBattle.turnQueue.shift(),unit=getBossUnit(uid);if(!unit||!unit.alive)return;if(unit.buff.freeze>0||unit.buff.stun>0){bossBattle.log.push(`${unit.name} 被控制，跳过行动。`);renderBossBattle();return;}if(unit.id==='boss')bossAct(unit);else bossAllyAct(unit);checkBossEnd();renderBossBattle();
@@ -8328,7 +8534,9 @@ renderBattle = function(){ __ultimateRenderBattleHud(); const b=document.getElem
 
 /* Boss 攻防也遵循本命道途 */
 bossAct = function(unit){
-  const allies=bossBattle.allies.filter(u=>u.alive);if(!allies.length)return;const target=allies.slice().sort((a,b)=>(a.position||0)-(b.position||0))[0];playAttackFx(unit,target,'enemy');let dmg=unit.atk;if(target.dmgReduce)dmg*=1-target.dmgReduce;if(target.buff.shield>0){dmg*=.5;if(target.isHero&&G.race==='妖')dmg*=.5;}dmg*=defMultiplier(target,dmg);dmg=Math.max(1,Math.floor(dmg));target.hp-=dmg;showDmgFloat(target,dmg,false);bossBattle.log.push(`👹 ${unit.name} 妖煞轰击 ${target.name}，${dmg} 伤害。`);
+  const allies=bossBattle.allies.filter(u=>u.alive);if(!allies.length)return;const target=allies.slice().sort((a,b)=>(a.position||0)-(b.position||0))[0];
+  if(target.buff&&target.buff.invincible>0){showStatusFloat(target,'无敌','#ffe27a');bossBattle.log.push(`  ${target.name} 处于无敌，免疫本次攻击。`);return;}
+  playAttackFx(unit,target,'enemy');let dmg=unit.atk;if(target.dmgReduce)dmg*=1-target.dmgReduce;if(target.buff.shield>0){dmg*=.5;if(target.isHero&&G.race==='妖')dmg*=.5;}dmg*=defMultiplier(target,dmg);dmg=Math.max(1,Math.floor(dmg));target.hp-=dmg;showDmgFloat(target,dmg,false);bossBattle.log.push(`👹 ${unit.name} 妖煞轰击 ${target.name}，${dmg} 伤害。`);
   const reflect=(target._counter||0)+(getDaoPath().key==='guard'&&Math.random()<.22?.35:0);if(reflect>0&&unit.alive){const rd=Math.floor(dmg*reflect);unit.hp-=rd;showDmgFloat(unit,rd,false);showStatusFloat(unit,'玄武反震','#e4c17e');spawnEarthAt(unit,3);bossBattle.log.push(`  ${target.name} 反震 ${rd} 伤害。`);}if(target.hp<=0){target.hp=0;target.alive=false;bossBattle.log.push(`💀 ${target.name} 倒下。`);}
 };
 
