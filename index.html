@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>剑气除魔 · 问道仙途</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { overscroll-behavior-y: contain; }
+  button, .slot-btn, .ring-slot, .ring-chip, .pg-card, .pick-card, .bag-item, .stat-card { touch-action: manipulation; }
   body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #1c1c22; color: #e8e8e8; padding: 8px; max-width: 1200px; margin: 0 auto; font-size: 13px; line-height: 1.5; }
   h1 { font-size: 15px; text-align: center; margin-bottom: 6px; color: #f0c674; }
   .card { background: #26262e; border: 1px solid #3a3a44; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
@@ -490,29 +493,81 @@
   .boss-big-card { border-color:#bd5960; background:linear-gradient(180deg,#482429,#241014); box-shadow:0 0 45px rgba(218,72,83,.26); animation:bossBreath 2.2s ease-in-out infinite alternate; }
   @keyframes bossBreath{to{transform:scale(1.015);box-shadow:0 0 65px rgba(218,72,83,.32)}}
 
+  /* ===== 角色属性面板（全量属性） ===== */
+  .stat-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:6px 0 8px; }
+  .stat-card { background:linear-gradient(180deg,rgba(28,32,44,.95),rgba(16,19,27,.95)); border:1px solid rgba(133,166,197,.18); border-radius:9px; padding:7px 6px; text-align:center; }
+  .stat-card span { display:block; font-size:10px; color:#8b98a8; }
+  .stat-card b { display:block; font-size:14px; color:#f0c674; margin-top:2px; word-break:break-all; }
+  .stat-groups { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+  .stat-group { background:#1c1c23; border:1px solid #35353f; border-radius:8px; padding:8px; }
+  .stat-group.wide { grid-column:1 / -1; }
+  .stat-group-title { color:#f0c674; font-weight:600; margin-bottom:5px; font-size:12px; }
+  .stat-row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.05); }
+  .stat-row:last-child { border-bottom:none; }
+  .stat-k { color:#98a5b6; font-size:11px; flex:0 0 auto; }
+  .stat-v { color:#e8e8e8; font-size:11px; text-align:right; font-weight:600; word-break:break-word; }
+  .stat-tip { display:block; font-style:normal; font-weight:400; font-size:9px; color:#74808f; margin-top:1px; }
+  .stat-mini { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin-top:6px; }
+  .stat-mini div { background:#191920; border:1px solid #303038; border-radius:7px; padding:5px 4px; text-align:center; }
+  .stat-mini span { display:block; font-size:9px; color:#8b98a8; }
+  .stat-mini b { display:block; font-size:12px; color:#f0c674; margin-top:1px; word-break:break-all; }
+  .stat-more { font-size:10px; color:#7c8b9c; margin-top:5px; text-align:right; }
+  @media (max-width:640px) {
+    .stat-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .stat-groups { grid-template-columns:1fr; }
+    .stat-group.wide { grid-column:auto; }
+  }
+
+  /* ===== 手机端：标签横向滑动 + 战场不溢出 + 弹窗贴底 ===== */
   @media (max-width:900px) {
-    body { padding:8px 8px 118px; }
-    h1 { font-size:18px; letter-spacing:.12em; margin-bottom:8px; }
-    .tabs { position:fixed; left:7px; right:7px; bottom:7px; top:auto; z-index:90; grid-template-columns:repeat(5,1fr); margin:0; padding:5px; background:rgba(6,11,18,.95); }
-    .tabs button { font-size:9px; padding:3px 1px; min-height:43px; }
-    #gamePanel > .card:first-child { top:5px; }
-    #battleArea { min-height:360px; padding:11px 7px 9px; }
-    .battle-grid { min-height:240px; gap:5px; padding:8px 0; }
-    .side { min-height:220px; }
-    .columns { gap:4px; min-height:210px; }
-    .column { min-width:76px; gap:5px; }
-    .unit { width:76px; min-height:96px; padding:5px 4px; }
-    .unit-avatar { width:29px;height:29px;font-size:15px; }
-    .unit.empty,.unit.transition { min-height:96px; }
-    .vs-mark { width:34px;height:34px;font-size:16px;padding:0; }
-    .team-title { font-size:9px; letter-spacing:.06em; }
-    .battle-ctrl button { min-width:auto; padding:5px 8px; font-size:10px; }
+    body { padding:8px 8px 92px; }
+    h1 { font-size:17px; letter-spacing:.1em; margin-bottom:6px; }
+    .card { padding:9px; }
+    .tabs { position:fixed; left:6px; right:6px; bottom:6px; top:auto; z-index:90;
+      display:flex; flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; gap:4px;
+      margin:0; padding:5px 5px 6px; background:rgba(6,11,18,.96); border-radius:12px;
+      -webkit-overflow-scrolling:touch; scrollbar-width:none; overscroll-behavior-x:contain; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tabs button { flex:0 0 auto; min-width:76px; min-height:42px; font-size:10px; padding:4px 6px; }
+    .tabs button.active { box-shadow:0 0 14px rgba(240,198,116,.2); }
+    #gamePanel > .card:first-child { top:4px; }
+    #battleArea { min-height:auto; padding:10px 7px 8px; }
+    .battle-grid { min-height:0; gap:4px; padding:6px 0; }
+    .side { min-height:0; }
+    .columns { gap:3px; min-height:0; align-items:flex-start; }
+    .column { min-width:0; gap:4px; }
+    .unit { width:64px; min-height:86px; padding:4px 3px; }
+    .unit-avatar { width:26px; height:26px; font-size:14px; }
+    .unit.empty, .unit.transition { min-height:86px; }
+    .vs-mark { width:26px; height:26px; font-size:14px; padding:0; }
+    .team-title { font-size:9px; letter-spacing:.04em; }
+    .battle-ctrl { gap:5px; }
+    .battle-ctrl button { min-width:auto; min-height:38px; padding:7px 10px; font-size:11px; }
     .partner-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .draw-shell { min-height:520px; }
     .draw-results { grid-template-columns:repeat(2,minmax(120px,1fr)); max-height:62vh; overflow:auto; padding-right:2px; }
     .draw-card { min-height:135px; }
-    .summon-circle { width:170px;height:170px; }
+    .summon-circle { width:170px; height:170px; }
     .summon-circle::after { inset:50px; }
+    /* 角色详情：手机端改成底部抽屉，一屏能看全属性 */
+    #charDetailModal { padding:0; align-items:flex-end; }
+    #charDetailModal .detail-box { width:100vw; max-width:none; max-height:92dvh; border-radius:16px 16px 0 0; }
+    .detail-head { border-radius:16px 16px 0 0; padding:10px; }
+    .detail-body { padding:10px 10px 18px; }
+    .detail-avatar { width:36px; height:36px; font-size:17px; }
+    /* 其它弹窗也别顶出屏幕 */
+    .modal-box { max-height:88dvh; overflow-y:auto; }
+    .sub-head { position:sticky; top:-2px; z-index:3; padding:6px 2px 8px; margin:-2px -2px 6px; background:rgba(20,24,32,.97); }
+    #subPanel { padding:10px; }
+  }
+  @media (max-width:380px) {
+    .unit { width:56px; min-height:80px; }
+    .unit-avatar { width:22px; height:22px; font-size:12px; }
+    .unit-name { font-size:9px; }
+    .unit-hp { font-size:8px; }
+    .tabs button { min-width:64px; font-size:9px; }
+    .stat-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .stat-mini { grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
   @media (max-width:520px) {
     #gamePanel > .card:first-child { position:relative; top:auto; }
@@ -5326,6 +5381,7 @@ function makeHeroUnit() {
   const gr = getGrowBonus('hero');
   const sl = getSoulBonus('hero');
   const rb = getRingBonus('hero');
+  const dl = getDaolvBonus();
 
   const hp = Math.floor(heroMaxHp() * 0.9 * (1 + sb.hpBonus));
   const atk = Math.floor(heroRawPower() * 0.10);
@@ -5345,8 +5401,8 @@ function makeHeroUnit() {
     crit: race.crit + fh.critUp + fb.critUp + getXiantuBonus().critUp + sl.critUp + rb.critUp,
     critDmg: rb.critDmg,
     def: charDefense('hero'),
-    dmgReduce: fb.dmgReduce + sl.dmgReduce + gr.dmgReduce + rb.dmgReduce,
-    dmgUp: sl.dmgUp + rb.dmgUp,
+    dmgReduce: fb.dmgReduce + sl.dmgReduce + gr.dmgReduce + rb.dmgReduce + dl.dmgReduce,
+    dmgUp: sl.dmgUp + rb.dmgUp + dl.dmgUp,
     lifesteal: sl.lifesteal + rb.lifesteal,
     soulName: sl.soul ? sl.soul.name : null,
     skill: { name: race.heroSkillName, effect: 'hero_' + G.race },
@@ -5367,6 +5423,7 @@ function makeAllyUnit(name) {
   const gr = getGrowBonus(name);
   const sl = getSoulBonus(name);
   const rb = getRingBonus(name);
+  const dl = getDaolvBonus();
 
   const hp = Math.floor(partnerMaxHp(name) * 0.9 * (1 + sb.hpBonus));
   const atk = Math.floor(partnerRawPower(name) * 0.10);
@@ -5386,8 +5443,8 @@ function makeAllyUnit(name) {
     crit: fh.critUp + fb.critUp + getXiantuBonus().critUp + sl.critUp + rb.critUp,
     critDmg: rb.critDmg,
     def: charDefense(name),
-    dmgReduce: fb.dmgReduce + sl.dmgReduce + gr.dmgReduce + rb.dmgReduce,
-    dmgUp: sl.dmgUp + rb.dmgUp,
+    dmgReduce: fb.dmgReduce + sl.dmgReduce + gr.dmgReduce + rb.dmgReduce + dl.dmgReduce,
+    dmgUp: sl.dmgUp + rb.dmgUp + dl.dmgUp,
     lifesteal: sl.lifesteal + rb.lifesteal,
     soulName: sl.soul ? sl.soul.name : null,
     skill: p,
@@ -6839,6 +6896,130 @@ function closeCharDetail() {
   detailCharKey = null;
 }
 
+/* ==================== 数字与百分比显示 ==================== */
+function fmtNum(n) {
+  n = Math.floor(Number(n) || 0);
+  const abs = Math.abs(n);
+  if (abs >= 1e8) return (n / 1e8).toFixed(abs >= 1e10 ? 0 : 2) + '亿';
+  if (abs >= 1e4) return (n / 1e4).toFixed(abs >= 1e6 ? 0 : 1) + '万';
+  return n.toLocaleString('zh-CN');
+}
+function fmtPct(v, digits) { return ((v || 0) * 100).toFixed(digits === undefined ? 1 : digits) + '%'; }
+function fmtSignedPct(v, digits) { const d = digits === undefined ? 1 : digits; return (v > 0 ? '+' : '') + ((v || 0) * 100).toFixed(d) + '%'; }
+
+/* ==================== 角色完整属性（把所有系统的加成汇总） ==================== */
+function buildCharStats(charKey) {
+  const isHero = charKey === 'hero';
+  const p = isHero ? null : findPartner(charKey);
+  if (!isHero && !p) return null;
+
+  const q = isHero ? qualityOf(G.heroQuality) : getCharQuality(charKey);
+  const cr = charRealm(charKey);
+  const race = isHero ? RACES[G.race] : null;
+  const fh = getFashenBonus();
+  const fb = getFabaoBonus(charKey);
+  const gr = getGrowBonus(charKey);
+  const sl = getSoulBonus(charKey);
+  const rb = getRingBonus(charKey);
+  const sb = getSetBonus(charKey);
+  const xt = getXiantuBonus();
+  const dl = getDaolvBonus();
+  const dao = getDaoPath();
+  const g = G.charGrow[charKey] || {};
+
+  const power = isHero ? heroRawPower() : partnerRawPower(charKey);
+  const maxHp = isHero ? heroMaxHp() : partnerMaxHp(charKey);
+  const atk = Math.floor(power * 0.10);
+  const crit = (isHero ? race.crit : 0) + fh.critUp + fb.critUp + xt.critUp + sl.critUp + rb.critUp;
+  const critDmg = rb.critDmg || 0;
+  const dmgUp = (sl.dmgUp || 0) + (rb.dmgUp || 0) + (dl.dmgUp || 0);
+  const dmgReduce = (fb.dmgReduce || 0) + (sl.dmgReduce || 0) + (gr.dmgReduce || 0) + (rb.dmgReduce || 0) + (dl.dmgReduce || 0);
+  const lifesteal = (sl.lifesteal || 0) + (rb.lifesteal || 0);
+  const def = charDefense(charKey);
+  const initEnergy = fh.initEnergy + fb.initEnergy + fb.initEnergyTeam + gr.initEnergy + sl.initEnergy + rb.initEnergy;
+  const energyRegen = 20 + fh.energyRegen + fb.energyRegen + sl.energyRegen + rb.energyRegen;
+  const skillLv = g.skillLv || 1;
+  const skillScale = 1 + (Math.max(1, skillLv) - 1) * 0.06;
+  const star = isHero ? 0 : (G.star[charKey] || 0);
+  const eq = isHero ? G.heroEquip : (G.partnerEquip[charKey] || {});
+  const eqPower = equipPowerOf(eq);
+  const soulKey = (G.soulEquip || {})[charKey];
+  const soul = soulKey ? findSoul(soulKey) : null;
+  const rings = ringSlotsOf(charKey).map(id => (id ? ringById(id) : null)).filter(Boolean);
+
+  const mulAtk = q.mul * (1 + sb.atkBonus) * (1 + fh.atkUp) * (1 + fb.atkUp) * (1 + gr.atkUp)
+    * (1 + xt.atkUp) * (1 + sl.atkUp) * (1 + rb.atkUp);
+  const mulHp = q.hpMul * (1 + sb.hpBonus) * (1 + fh.hpUp) * (1 + fb.hpUp) * (1 + gr.hpUp)
+    * (1 + xt.hpUp) * (1 + sl.hpUp) * (1 + rb.hpUp);
+
+  const core = [
+    { k: '综合战力', v: fmtNum(power), tip: '攻击力 = 战力 × 10%' },
+    { k: '攻击力', v: fmtNum(atk), tip: '普攻与技能伤害的基数' },
+    { k: '生命上限', v: fmtNum(maxHp) },
+    { k: '防御', v: fmtNum(def), tip: '减伤 = 防御/(防御+8×本次伤害)，上限 75%' },
+    { k: '品质', v: q.name },
+    { k: '境界', v: `${realmData(cr.realmIdx).name} ${cr.subLayer} 层` },
+  ];
+
+  const offense = [
+    { k: '暴击率', v: fmtPct(crit) },
+    { k: '暴击伤害', v: critDmg ? fmtSignedPct(critDmg) : '—', tip: '暴击倍率 = 2 × (1 + 爆伤)' },
+    { k: '增伤', v: dmgUp ? fmtSignedPct(dmgUp) : '—' },
+    { k: '吸血', v: lifesteal ? fmtSignedPct(lifesteal) : '—', tip: '造成伤害后按比例回血' },
+    { k: '技能等级', v: 'Lv.' + skillLv, tip: `技能伤害/治疗 ×${skillScale.toFixed(2)}` },
+    { k: '本命技能', v: isHero ? race.heroSkillName : p.skillName },
+  ];
+
+  const defense = [
+    { k: '减伤', v: dmgReduce ? fmtSignedPct(dmgReduce) : '—' },
+    { k: '初始能量', v: Math.floor(initEnergy) },
+    { k: '每回合回能', v: Math.floor(energyRegen) },
+    { k: '生命/能量上限', v: '100 能量', tip: '能量满即放技能（已取消冷却）' },
+    { k: '种族', v: isHero ? `${race.name} · ${race.desc}` : '道友' },
+    { k: '神品增幅', v: goldBoostText(charKey) ? '技能伤害/治疗 +25%' : '—', tip: '红品升金（界限突破/主角神品）解锁' },
+  ];
+
+  const sources = [
+    { k: '装备战力', v: '+' + fmtNum(eqPower), tip: '四件装备的基础战力合计' },
+    { k: '套装', v: sb.active.length ? `${sb.active.join('、')}` : '未激活', tip: `攻击 ${fmtSignedPct(sb.atkBonus, 0)} · 生命 ${fmtSignedPct(sb.hpBonus, 0)}` },
+    { k: '法身', v: `攻 ${fmtSignedPct(fh.atkUp, 0)} · 血 ${fmtSignedPct(fh.hpUp, 0)}`, tip: `防御 ${fmtSignedPct(fh.defUp)} · 暴击 ${fmtSignedPct(fh.critUp)} · 回能 +${Math.round(fh.energyRegen)} · 初能 +${Math.round(fh.initEnergy)}` },
+    { k: '法宝', v: `攻 ${fmtSignedPct(fb.atkUp, 0)} · 血 ${fmtSignedPct(fb.hpUp, 0)}`, tip: `减伤 ${fmtSignedPct(fb.dmgReduce)} · 初能 +${Math.round(fb.initEnergy + fb.initEnergyTeam)} · 暴击 ${fmtSignedPct(fb.critUp)}` },
+    { k: '武魂', v: soul ? `${soul.name} Lv.${sl.lv}${sl.star ? ' ' + sl.star + '★' : ''}` : '未装配', tip: soul ? soul.soulSkill : '去武魂殿凝魂' },
+    { k: '魂环', v: `${rings.length}/${RING_SLOTS_PER_CHAR} 枚`, tip: `攻 ${fmtSignedPct(rb.atkUp, 0)} · 血 ${fmtSignedPct(rb.hpUp, 0)} · 暴击 ${fmtSignedPct(rb.critUp)} · 爆伤 ${fmtSignedPct(rb.critDmg)} · 吸血 ${fmtSignedPct(rb.lifesteal)} · 增伤 ${fmtSignedPct(rb.dmgUp)} · 减伤 ${fmtSignedPct(rb.dmgReduce)}` },
+    { k: '养成', v: `功法 ${g.gongfa || 0} · 体质 ${g.tizhi || 0} · 护体 ${g.wuxing || 0} · 防御 ${g.shenfa || 0} · 神识 ${g.shenshi || 0}`, tip: '功法/体质 各 +2%/级，护体 减伤+1%/级，防御 +3%/级，神识 初能+2/级' },
+    { k: '仙途', v: `攻 ${fmtSignedPct(xt.atkUp, 0)} · 血 ${fmtSignedPct(xt.hpUp, 0)} · 暴击 ${fmtSignedPct(xt.critUp)}`, tip: `修为 +${fmtSignedPct(xt.cultUp, 0)} · 灵液 +${fmtSignedPct(xt.liquidUp, 0)} · 灵石 +${fmtSignedPct(xt.stoneUp, 0)}` },
+    { k: '道侣', v: dl.dmgUp || dl.dmgReduce ? `伤害 ${fmtSignedPct(dl.dmgUp)} · 减伤 ${fmtSignedPct(dl.dmgReduce)}` : '未结缘', tip: '在洞府 · 道侣中结缘' },
+    { k: '本命道途', v: `${dao.icon} ${dao.name}`, tip: dao.bonus },
+    { k: '属性乘区', v: `攻击 ×${mulAtk.toFixed(2)} · 生命 ×${mulHp.toFixed(2)}`, tip: '品质 × 套装 × 法身 × 法宝 × 养成 × 仙途 × 武魂 × 魂环' },
+    { k: '星级', v: star > 0 ? star + ' ★' : '—' },
+  ];
+
+  return { core, offense, defense, sources, power, maxHp, atk, def };
+}
+
+function statRowsHtml(rows) {
+  return rows.map(r => `<div class="stat-row"><span class="stat-k">${r.k}</span><span class="stat-v">${r.v}${r.tip ? `<i class="stat-tip">${r.tip}</i>` : ''}</span></div>`).join('');
+}
+
+/* 详情弹窗里的完整属性面板 */
+function statPanelHtml(s) {
+  if (!s) return '';
+  return `<div class="stat-cards">${s.core.map(r => `<div class="stat-card"><span>${r.k}</span><b>${r.v}</b></div>`).join('')}</div>
+    <div class="stat-groups">
+      <div class="stat-group"><div class="stat-group-title">⚔️ 进攻属性</div>${statRowsHtml(s.offense)}</div>
+      <div class="stat-group"><div class="stat-group-title">🛡️ 防御与续航</div>${statRowsHtml(s.defense)}</div>
+      <div class="stat-group wide"><div class="stat-group-title">📊 加成来源（已全部计入上方数值）</div>${statRowsHtml(s.sources)}</div>
+    </div>`;
+}
+
+/* 角色状态卡里的紧凑全属性 */
+function statMiniHtml(s, charKey) {
+  if (!s) return '';
+  const rows = s.core.concat(s.offense, s.defense);
+  return `<div class="stat-mini">${rows.map(r => `<div><span>${r.k}</span><b>${r.v}</b></div>`).join('')}</div>
+    <div class="stat-more">共 ${rows.length + s.sources.length} 项属性 · 点卡牌或下方按钮看完整仙册 →</div>`;
+}
+
 function renderCharDetail() {
   if (!G || !detailCharKey) return;
   const c = detailCharKey;
@@ -6937,17 +7118,10 @@ function renderCharDetail() {
     ? `<div class="mini set-active">已激活：${sb.active.join('、')}（攻击 +${Math.floor(sb.atkBonus * 100)}%，生命 +${Math.floor(sb.hpBonus * 100)}%）</div>`
     : '<div class="mini">暂无套装效果</div>';
 
+  const stats = buildCharStats(c);
+
   body.innerHTML = `
-    <div class="detail-stats">
-      <div class="detail-stat">综合战力<b>${rawPower}</b></div>
-      <div class="detail-stat">生命上限<b>${maxHp}</b></div>
-      <div class="detail-stat">暴击率<b>${Math.round(crit * 1000) / 10}%</b></div>
-      <div class="detail-stat">防御<b>${def}</b></div>
-      <div class="detail-stat">增伤<b>${Math.round((sl.dmgUp || 0) * 100)}%</b></div>
-      <div class="detail-stat">初始能量<b>${Math.floor(initEnergy)}</b></div>
-      <div class="detail-stat">每回合回能<b>${Math.floor(energyRegen)}</b></div>
-      <div class="detail-stat">减伤<b>${Math.round(((fb.dmgReduce || 0) + sl.dmgReduce + (gr.dmgReduce || 0)) * 1000) / 10}%</b></div>
-    </div>
+    ${statPanelHtml(stats)}
 
     <div class="detail-section">
       <div class="detail-section-title">⚔️ 技能 · ${skillName}</div>
@@ -7146,6 +7320,7 @@ function renderCharStatus() {
     </div>
     <div class="mini">境界：${realmData(cr.realmIdx).name} ${cr.subLayer} 层</div>
     <div class="mini">技能：【${skillName}】${goldBoostText(c) ? ` <span style="color:#ffdc78;">✨ ${goldBoostText(c)}</span>` : ''}</div>
+    ${statMiniHtml(buildCharStats(c), c)}
     ${skillInfoHtml}
     ${setLine}
     <div class="mini" style="margin-top:4px;">📈 养成：功法 Lv.${g.gongfa} · 体质 Lv.${g.tizhi} · 护体 Lv.${g.wuxing} · 防御 Lv.${g.shenfa} · 神识 Lv.${g.shenshi} · 技能 Lv.${g.skillLv}</div>
