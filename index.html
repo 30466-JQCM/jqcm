@@ -459,6 +459,28 @@
   .mail-rewards { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
   .mail-chip { font-size:10px; padding:3px 7px; border-radius:999px; border:1px solid rgba(135,168,196,.2); background:rgba(9,16,26,.7); }
 
+
+  /* 关卡进度奖励 */
+  #progressRewardBtn.claim-ready { border-color:rgba(255,215,105,.72); box-shadow:0 0 18px rgba(255,205,83,.22); animation:progressBtnPulse 1.6s ease-in-out infinite alternate; }
+  #progressRewardBadge { display:none; min-width:16px; height:16px; line-height:16px; padding:0 4px; margin-left:3px; border-radius:999px; background:#d84f58; color:#fff; font-size:9px; text-align:center; box-shadow:0 0 10px rgba(216,79,88,.35); }
+  @keyframes progressBtnPulse { to { filter:brightness(1.13); box-shadow:0 0 25px rgba(255,205,83,.34); } }
+  .progress-summary { display:flex; gap:8px; flex-wrap:wrap; margin:9px 0 12px; }
+  .progress-summary span { padding:5px 9px; border:1px solid rgba(136,168,197,.16); border-radius:999px; background:rgba(6,12,20,.55); color:#93a6b8; font-size:10px; }
+  .progress-summary b { color:#f4df9c; }
+  .progress-reward-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
+  .progress-reward-card { position:relative; padding:11px; border:1px solid rgba(132,163,194,.16); border-radius:12px; background:linear-gradient(180deg,rgba(21,31,45,.9),rgba(10,17,27,.94)); overflow:hidden; }
+  .progress-reward-card.ready { border-color:rgba(242,207,120,.54); box-shadow:0 0 20px rgba(242,207,120,.10); }
+  .progress-reward-card.claimed { opacity:.55; filter:saturate(.7); }
+  .progress-reward-card.locked { opacity:.78; }
+  .progress-reward-card .pr-title { display:flex; justify-content:space-between; align-items:center; gap:8px; font-weight:800; color:#f1e5bf; }
+  .progress-reward-card .pr-state { font-size:9px; padding:2px 6px; border-radius:999px; border:1px solid rgba(135,166,196,.18); color:#8496a8; }
+  .progress-reward-card.ready .pr-state { color:#ffe295; border-color:rgba(242,207,120,.5); }
+  .progress-reward-card .pr-rewards { display:flex; flex-wrap:wrap; gap:4px; margin:8px 0; }
+  .progress-reward-card .pr-chip { font-size:9px; padding:3px 6px; border-radius:999px; border:1px solid rgba(135,168,196,.18); background:rgba(5,11,19,.62); color:#aebdcb; }
+  .unit.dead { pointer-events:none; }
+  .unit.dead .unit-avatar { filter:grayscale(1); opacity:.28; }
+  .unit.dead::after { content:'魂散'; position:absolute; inset:auto 6px 7px; text-align:center; color:#687687; font-size:9px; letter-spacing:.18em; pointer-events:none; }
+
   /* 装备选择界面 */
   .pick-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:7px; }
   .pick-card { padding:8px; border:1px solid rgba(133,166,197,.18); border-radius:10px; background:linear-gradient(180deg,rgba(21,31,45,.9),rgba(11,18,28,.92)); }
@@ -769,6 +791,7 @@
     </div>
     <div>
       <button class="small" onclick="openMailModal()">📮 邮件 <b id="mailBadge" style="color:#7ec87e">0</b></button>
+      <button class="small gold" id="progressRewardBtn" onclick="openProgressRewards()">🏆 进度奖励 <b id="progressRewardBadge">0</b></button>
       <button class="small gold" onclick="openCodeModal()">🎁 兑换码</button>
     </div>
   </div>
@@ -828,7 +851,8 @@
         <span class="mini" style="margin-left:6px;">已拥有：<b id="ownedPartnerCount" style="color:#7ec87e">0</b> / 41</span>
         <span class="mini">魔晶：<b id="drawCrystal" style="color:#7ec87e">0</b></span>
       </div>
-      <div class="mini" style="margin-top:4px;">未上阵的伙伴不显示在下方列表，点战斗区绿色＋号可上阵</div>
+      <div class="mini" style="margin-top:4px;">召灵概率：<span class="q-gold"><b>神品 6%</b></span> · <span class="q-red"><b>仙品 24%</b></span> · 天品 16% · 地品 18% · 玄品 16% · 灵品 12% · 凡品 8%</div>
+      <div class="mini" style="margin-top:3px;">未上阵的伙伴不显示在下方列表，点战斗区绿色＋号可上阵</div>
     </div>
 
     <div class="card">
@@ -1719,6 +1743,9 @@ function newGame(race, heroName) {
     bossMaxDamage: 0,
     bossKillCount: 0,
 
+    maxClearedStage: 0,
+    progressRewardsClaimed: [],
+
     lastTick: Date.now()
   };
 }
@@ -1866,6 +1893,8 @@ function normalizeSave(data) {
   if (d.kills === undefined) d.kills = 0;
   if (d.floor === undefined) d.floor = 1;
   if (d.subFloor === undefined) d.subFloor = 1;
+  if (d.maxClearedStage === undefined) d.maxClearedStage = Math.max(0, (d.floor - 1) * 10 + d.subFloor - 1);
+  if (!Array.isArray(d.progressRewardsClaimed)) d.progressRewardsClaimed = [];
   if (d.wave === undefined) d.wave = 1;
   d.battling = false;
 
@@ -2842,6 +2871,7 @@ function calcOfflineRewards() {
   G.stone += stoneGain + pushedRewardStone;
   G.floor = curFloor;
   G.subFloor = curSub;
+  if (pushed > 0) G.maxClearedStage = Math.max(G.maxClearedStage || 0, (curFloor - 1) * 10 + curSub - 1);
   G.kills += pushedKills;
   G.lastTick = now;
 
@@ -2953,19 +2983,26 @@ function drawTen() {
   openDrawReveal(results, 10);
 }
 
+const PARTNER_DRAW_RATES = [
+  { quality:'gold',   rate:0.06 },
+  { quality:'red',    rate:0.24 },
+  { quality:'orange', rate:0.16 },
+  { quality:'purple', rate:0.18 },
+  { quality:'blue',   rate:0.16 },
+  { quality:'green',  rate:0.12 },
+  { quality:'gray',   rate:0.08 }
+];
+
 function rollPartner() {
-  const weights = {
-    'gray': 200, 'green': 150, 'blue': 100, 'purple': 60,
-    'orange': 30, 'red': 8, 'gold': 2
-  };
-  let total = 0;
-  PARTNERS.forEach(p => { total += weights[p.quality] || 1; });
-  let roll = Math.random() * total;
-  for (const p of PARTNERS) {
-    roll -= weights[p.quality] || 1;
-    if (roll <= 0) return p;
+  /* 先抽品质、再在该品质角色池中等概率抽角色，避免“某品质角色多=概率被暗中放大”。 */
+  let r = Math.random(), quality = 'gray';
+  for (const row of PARTNER_DRAW_RATES) {
+    r -= row.rate;
+    if (r <= 0) { quality = row.quality; break; }
   }
-  return PARTNERS[0];
+  let pool = PARTNERS.filter(p => p.quality === quality);
+  if (!pool.length) pool = PARTNERS;
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function gainPartner(p, silent) {
@@ -4743,6 +4780,86 @@ function renderFabaoPicker() {
     }).join('');
 }
 
+/* ==================== 关卡进度奖励 ==================== */
+const PROGRESS_REWARDS = [
+  { need:5,   title:'初窥仙门', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:60},{res:'stone',icon:'💎',name:'灵石',amount:3000},{res:'liquid',icon:'💧',name:'至尊灵液',amount:50}] },
+  { need:10,  title:'一章问道', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:120},{res:'shard',icon:'🧩',name:'碎片',amount:10},{res:'soulJade',icon:'🧿',name:'魂玉',amount:25}] },
+  { need:20,  title:'筑基有成', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:200},{res:'shard',icon:'🧩',name:'碎片',amount:18},{res:'fashStone',icon:'🔱',name:'法身石',amount:8}] },
+  { need:30,  title:'仙缘初显', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:280},{res:'soulJade',icon:'🧿',name:'魂玉',amount:80},{quality:'red',icon:'🟥',name:'仙品伙伴',amount:1}] },
+  { need:50,  title:'金丹问世', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:420},{res:'shard',icon:'🧩',name:'碎片',amount:40},{quality:'red',icon:'🟥',name:'仙品伙伴',amount:1}] },
+  { need:80,  title:'元婴出窍', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:650},{res:'fashStone',icon:'🔱',name:'法身石',amount:25},{quality:'gold',icon:'🟨',name:'神品伙伴',amount:1}] },
+  { need:100, title:'百关登仙', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:888},{res:'shard',icon:'🧩',name:'碎片',amount:88},{quality:'gold',icon:'🟨',name:'神品伙伴',amount:1}] },
+  { need:150, title:'化神凌虚', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:1280},{res:'soulJade',icon:'🧿',name:'魂玉',amount:300},{quality:'gold',icon:'🟨',name:'神品伙伴',amount:1}] },
+  { need:200, title:'大乘之路', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:1888},{res:'fashStone',icon:'🔱',name:'法身石',amount:80},{quality:'gold',icon:'🟨',name:'神品伙伴',amount:1}] },
+  { need:300, title:'三百关仙尊礼', rewards:[{res:'crystal',icon:'🔮',name:'魔晶',amount:2888},{res:'shard',icon:'🧩',name:'碎片',amount:250},{res:'soulJade',icon:'🧿',name:'魂玉',amount:600},{quality:'gold',icon:'🟨',name:'神品伙伴',amount:1}] }
+];
+
+function ensureProgressRewardState() {
+  if (!G) return;
+  if (!Array.isArray(G.progressRewardsClaimed)) G.progressRewardsClaimed = [];
+  if (typeof G.maxClearedStage !== 'number') G.maxClearedStage = Math.max(0, (G.floor - 1) * 10 + G.subFloor - 1);
+}
+function progressRewardClaimableCount() {
+  if (!G) return 0; ensureProgressRewardState();
+  return PROGRESS_REWARDS.filter(x => G.maxClearedStage >= x.need && !G.progressRewardsClaimed.includes(x.need)).length;
+}
+function renderProgressRewardBadge() {
+  const badge = document.getElementById('progressRewardBadge'), btn = document.getElementById('progressRewardBtn');
+  if (!badge || !btn || !G) return;
+  const n = progressRewardClaimableCount();
+  badge.textContent = n; badge.style.display = n > 0 ? 'inline-block' : 'none';
+  btn.classList.toggle('claim-ready', n > 0);
+}
+function progressRewardText(r) { return `${r.icon || '🎁'} ${r.name}${r.quality ? ' ×1' : ' +' + Number(r.amount || 0).toLocaleString('zh-CN')}`; }
+function grantProgressRewardItem(r) {
+  if (r.quality) {
+    const pool = PARTNERS.filter(p => p.quality === r.quality);
+    if (!pool.length) return '伙伴奖励失效';
+    const p = pool[Math.floor(Math.random() * pool.length)];
+    const wasOwned = G.partners.includes(p.name);
+    gainPartner(p, true);
+    return `${r.icon || '🎴'} ${qualityByKey(r.quality).name}【${p.name}】${wasOwned ? '（升星）' : ''}`;
+  }
+  if (typeof G[r.res] !== 'number') G[r.res] = 0;
+  G[r.res] += Number(r.amount || 0);
+  return progressRewardText(r);
+}
+function claimProgressReward(need, silent) {
+  ensureProgressRewardState();
+  const row = PROGRESS_REWARDS.find(x => x.need === Number(need));
+  if (!row) return false;
+  if (G.maxClearedStage < row.need) { if (!silent) showToast(`还需通关 ${row.need - G.maxClearedStage} 关`, 'gold'); return false; }
+  if (G.progressRewardsClaimed.includes(row.need)) return false;
+  const got = row.rewards.map(grantProgressRewardItem);
+  G.progressRewardsClaimed.push(row.need);
+  log(`🏆 领取 ${row.need} 关进度奖励：${got.join('，')}`);
+  if (!silent) { showWorldCaption('进度奖励', `${row.need} 关 · ${row.title}`, row.need >= 80 ? 'gold' : 'blue', 1300); showToast(`已领取 ${row.need} 关奖励`, 'gold'); }
+  save(); render();
+  return true;
+}
+function claimAllProgressRewards() {
+  let n = 0; PROGRESS_REWARDS.forEach(x => { if (claimProgressReward(x.need, true)) n++; });
+  if (n) { showWorldCaption('仙途馈赠', `一键领取 ${n} 档进度奖励`, 'gold', 1400); showToast(`已领取 ${n} 档进度奖励`, 'gold'); }
+  else showToast('暂无可领取的进度奖励', 'good');
+  openProgressRewards();
+}
+function openProgressRewards() {
+  if (!G) return; ensureProgressRewardState();
+  const claimed = G.progressRewardsClaimed.length, claimable = progressRewardClaimableCount();
+  const cards = PROGRESS_REWARDS.map(row => {
+    const done = G.progressRewardsClaimed.includes(row.need), ready = !done && G.maxClearedStage >= row.need;
+    const state = done ? '已领取' : ready ? '可领取' : `还差 ${Math.max(0, row.need - G.maxClearedStage)} 关`;
+    return `<div class="progress-reward-card ${done ? 'claimed' : ready ? 'ready' : 'locked'}">
+      <div class="pr-title"><span>🏆 ${row.need} 关 · ${row.title}</span><span class="pr-state">${state}</span></div>
+      <div class="pr-rewards">${row.rewards.map(r => `<span class="pr-chip">${progressRewardText(r)}</span>`).join('')}</div>
+      <button class="small ${ready ? 'gold' : ''}" onclick="claimProgressReward(${row.need}); openProgressRewards();" ${ready ? '' : 'disabled'}>${done ? '已领取' : ready ? '领取奖励' : '未达成'}</button>
+    </div>`;
+  }).join('');
+  openSubPanel(subHead('🏆 关卡进度奖励', `最高已通关：<b>${G.maxClearedStage}</b> 关 · 可领取 <b>${claimable}</b> 档`, '<button class="small gold" onclick="claimAllProgressRewards()">一键领取</button>') +
+    `<div class="progress-summary"><span>最高进度 <b>${G.maxClearedStage}</b></span><span>已领取 <b>${claimed}</b> / ${PROGRESS_REWARDS.length}</span><span>奖励只在这里手动领取，普通关卡奖励会自动入账</span></div><div class="progress-reward-list">${cards}</div>`);
+  renderProgressRewardBadge();
+}
+
 /* ==================== 邮件系统 ==================== */
 const MAIL_KEEP_MAX = 30;
 
@@ -4822,7 +4939,7 @@ function claimAllMails() {
 function openMailModal() {
   openSubPanel(subHead('📮 邮件', '未领取：<b id="mailUnclaimed" style="color:#f0c674">0</b>',
     '<button class="small primary" onclick="claimAllMails()">一键领取</button>')
-    + '<div class="mini" style="margin:6px 0 8px;">世界 Boss 的战利品会寄到这里，点「领取」才会入账。</div>'
+    + '<div class="mini" style="margin:6px 0 8px;">系统补偿、活动附件等会寄到这里；世界 Boss 奖励现在会自动直接入账。</div>'
     + '<div id="mailList"></div>');
   (G.mails || []).forEach(m => { m.read = true; });
   save();
@@ -4847,7 +4964,7 @@ function renderMailList() {
   if (!el) return;
   const mails = G.mails || [];
   if (mails.length === 0) {
-    el.innerHTML = '<div class="tag">暂无邮件。击败世界 Boss 后战利品会寄到这里。</div>';
+    el.innerHTML = '<div class="tag">暂无邮件。系统补偿与活动附件会显示在这里；Boss 奖励无需邮件领取。</div>';
     return;
   }
   el.innerHTML = mails.map(m => {
@@ -6188,7 +6305,6 @@ function checkBattleEnd() {
       const clearedLabel = `${G.floor}-${G.subFloor}`;
       log(`🎉 通关 ${clearedLabel}！`);
       showStageBanner('通关', `${clearedLabel} · 灵光汇聚`);
-      showWorldCaption('秘境已破', `${clearedLabel} · 天道赐福`, 'gold');
       screenFlash('gold');
       grantFloorReward(clearedLabel);
       advanceFloor();
@@ -6275,8 +6391,12 @@ function grantFloorReward(clearedLabel) {
     }
   }
 
-  log(`🎁 通关奖励已结算：${rewards.map(r=>`${r.name}${r.value}`).join('，')}`);
-  openRewardModal('秘境已破', `${clearedLabel || (G.floor+'-'+G.subFloor)} · 天道赐福`, rewards);
+  const clearedIndex = (G.floor - 1) * 10 + sub;
+  G.maxClearedStage = Math.max(G.maxClearedStage || 0, clearedIndex);
+  log(`🎁 通关奖励已自动入账：${rewards.map(r=>`${r.name}${r.value}`).join('，')}`);
+  const compact = rewards.slice(0, 3).map(r => `${r.name}${r.value}`).join(' · ');
+  showToast(`通关奖励已入账 · ${compact}`, sub === 10 ? 'gold' : 'good');
+  renderProgressRewardBadge();
   return rewards;
 }
 
@@ -6550,74 +6670,57 @@ function checkBossEnd() {
 
 /* ==================== Boss 战结算 ==================== */
 function finishBossBattle(dmg, killed) {
+  if (!bossBattle || bossBattle.over) return;
   bossBattle.over = true;
   if (bossLoopId) { clearInterval(bossLoopId); bossLoopId = null; }
 
   const boss = bossBattle.bossData;
-  const ratio = boss.hp > 0 ? (dmg / bossBattle.boss.maxHp) : 1.0;
-  const { reward } = calcBossReward(ratio);
-
+  const ratio = Math.max(0, Math.min(1, dmg / bossBattle.boss.maxHp));
+  const { reward } = calcBossReward(ratio); /* 击杀额外奖励已在这里包含，不重复计算 */
   const soulJadeReward = 8 + Math.floor(ratio * 40);
   if (dmg > G.bossMaxDamage) G.bossMaxDamage = dmg;
 
-  /* 战利品不再直接入账，改为邮件发放（含面板上承诺的击杀额外奖励） */
-  const mailRewards = [
-    { res: 'crystal',   icon: '🔮', name: '魔晶',   amount: reward.crystal },
-    { res: 'shard',     icon: '🧩', name: '碎片',   amount: reward.shard },
-    { res: 'fashStone', icon: '🔱', name: '法身石', amount: reward.fashStone },
-    { res: 'stone',     icon: '💎', name: '灵石',   amount: reward.stone },
-    { res: 'soulJade',  icon: '🧿', name: '魂玉',   amount: soulJadeReward }
-  ];
-  if (killed) {
-    mailRewards.push(
-      { res: 'crystal',   icon: '🔮', name: '击杀奖励·魔晶',   amount: 100 },
-      { res: 'shard',     icon: '🧩', name: '击杀奖励·碎片',   amount: 10 },
-      { res: 'fashStone', icon: '🔱', name: '击杀奖励·法身石', amount: 5 }
-    );
-  }
-  sendMail({
-    title: killed ? `击败【${boss.name}】的战利品` : `【${boss.name}】讨伐战报`,
-    from: '天道使者',
-    body: `${killed ? '道友神威，妖邪伏诛，战利品已封存于此。' : '虽未竟全功，亦有不菲收获。'}造成伤害 ${dmg} / ${bossBattle.boss.maxHp}（${(ratio * 100).toFixed(1)}%）`,
-    rewards: mailRewards
-  });
+  /* Boss 战奖励直接自动入账，不再走邮件、不再要求手动领取。 */
+  G.crystal += reward.crystal;
+  G.shard += reward.shard;
+  G.fashStone += reward.fashStone;
+  G.stone += reward.stone;
+  G.soulJade += soulJadeReward;
 
   if (killed) {
     G.bossIdx++;
     G.bossKillCount++;
-    log(`🎉 击败 ${boss.name}！下一个 Boss 已出现。`);
+    log(`🎉 击败 ${boss.name}！奖励已自动入账，下一个 Boss 已出现。`);
   } else {
-    log(`👹 ${boss.name} 未击败，造成 ${dmg} 伤害。`);
+    log(`👹 ${boss.name} 讨伐结束，造成 ${dmg} 伤害。伤害档奖励已自动入账。`);
   }
-  log(`   战利品已寄出：魔晶×${reward.crystal}，碎片×${reward.shard}，法身石×${reward.fashStone}，灵石×${reward.stone}，魂玉×${soulJadeReward}（📮 邮件领取）`);
+  log(`   自动获得：魔晶×${reward.crystal}，碎片×${reward.shard}，法身石×${reward.fashStone}，灵石×${reward.stone}，魂玉×${soulJadeReward}`);
 
   G.bossCd = BOSS_CD;
+  save();
+  renderTopBar();
+  renderBoss();
 
-  /* 结算面板：弹出 3 秒后自动关闭 */
-  const panelRewards = mailRewards.map(r => ({ icon: r.icon, name: r.name, value: '+' + r.amount.toLocaleString('zh-CN') }));
-  openRewardModal(killed ? '击败 Boss' : 'Boss 挑战结束',
-    `${boss.name} · 战利品已寄至邮件`, panelRewards.slice(0, 6));
-  setTimeout(closeBossSettlement, 3000);
+  showWorldCaption(killed ? '妖王伏诛' : '讨伐结束', `${boss.name} · 奖励已自动入账`, killed ? 'gold' : 'blue', 1250);
+  showToast(`Boss 奖励已入账 · 魔晶 +${reward.crystal} · 灵石 +${reward.stone}`, killed ? 'gold' : 'good');
 
   const el = document.getElementById('bossBattleBody');
   if (el) {
     el.innerHTML = `
-      <div class="boss-result">${killed ? '🎉 击败 Boss！' : '💀 挑战失败'}</div>
-      <div class="mini" style="text-align:center; margin-bottom:8px;">
-        造成伤害：${dmg} / ${bossBattle.boss.maxHp}（${(ratio * 100).toFixed(1)}%）
-      </div>
-      <div class="mini" style="text-align:center;">
-        📮 战利品已发送至邮件：魔晶×${reward.crystal} · 碎片×${reward.shard} · 法身石×${reward.fashStone} · 灵石×${reward.stone} · 魂玉×${soulJadeReward}${killed ? ' · 击杀奖励 魔晶×100/碎片×10/法身石×5' : ''}
-      </div>
-      <div style="text-align:center; margin-top:12px;">
-        <button class="primary" onclick="closeRewardModal(); closeBossBattle(); openMailModal();">📮 去邮件领取</button>
-        <button onclick="closeBossBattle()">关闭</button>
-      </div>
-    `;
+      <div class="boss-arena" style="min-height:280px;display:grid;place-items:center;text-align:center;">
+        <div>
+          <div class="boss-result">${killed ? '🎉 妖王伏诛' : '⚔️ 讨伐结束'}</div>
+          <div class="mini" style="margin-top:7px;">造成伤害：${dmg.toLocaleString('zh-CN')} / ${bossBattle.boss.maxHp.toLocaleString('zh-CN')}（${(ratio * 100).toFixed(1)}%）</div>
+          <div class="mini" style="margin-top:7px;color:#d6c58f;">奖励已自动发放 · 即将返回 Boss 界面</div>
+        </div>
+      </div>`;
   }
 
-  save();
-  renderBoss();
+  /* 短暂展示结果后自动退出，不需要玩家再点关闭。 */
+  const finishedBoss = bossBattle;
+  setTimeout(() => {
+    if (bossBattle === finishedBoss && bossBattle && bossBattle.over) closeBossBattle();
+  }, 1300);
   render();
 }
 
@@ -6720,7 +6823,7 @@ function renderBoss() {
       </table>
     </div>
     <div class="mini" style="margin-top:4px;">💡 击杀 Boss 额外奖励：魔晶 +100，碎片 +10，法身石 +5</div>
-    <div class="mini" style="margin-top:2px;">📮 所有 Boss 战利品都会寄到邮件，记得去领取。</div>
+    <div class="mini" style="margin-top:2px; color:#7cf1bb;">✅ Boss 结束后，伤害档奖励会自动结算并直接入账，界面自动返回。</div>
   </div>`;
 
   el.innerHTML = html;
@@ -6940,6 +7043,7 @@ function renderSharedCounters() {
   const dc = document.getElementById('drawCrystal');
   if (dc) dc.textContent = Math.floor(G.crystal);
   renderMailBadge();
+  renderProgressRewardBadge();
 }
 
 function renderActivePage() {
@@ -7857,7 +7961,8 @@ function unitHtml(u, opts) {
   const clickAttr = (!opts || !opts.noClick) && (u.side === 'ally' && u.charKey) ? ` data-clickable="1" onclick="openCharDetail('${u.charKey}')"` : '';
   const avatar = avatarGlyph(u.name, u.isHero ? 'hero' : u.side);
 
-  return `<div class="${cls.join(' ')}" style="--rarity:${rarityHex(qKey)}" data-unit-id="${u.id}"${clickAttr}>
+  const unitIdAttr = u.alive ? ` data-unit-id="${u.id}"` : ` data-dead-unit-id="${u.id}"`;
+  return `<div class="${cls.join(' ')}" style="--rarity:${rarityHex(qKey)}"${unitIdAttr}${clickAttr}>
     <div class="unit-avatar">${avatar}</div>
     <div class="unit-name ${u.side} ${qCls}">${u.isHero ? '👑 ' : ''}${u.name}</div>
     <div class="unit-hp">${Math.max(0, Math.floor(u.hp)).toLocaleString('zh-CN')} / ${Math.floor(u.maxHp).toLocaleString('zh-CN')}</div>
@@ -8020,6 +8125,7 @@ function spawnImpact(x, y, kind) {
 }
 
 function playAttackFx(attacker, target, kind) {
+  if (target && !target.alive) return;
   const a = unitRect(attacker), t = unitRect(target);
   if (!a || !t) return;
   const x1 = a.left + a.width / 2, y1 = a.top + a.height / 2;
@@ -8270,15 +8376,32 @@ function pickHighestAtk(arr){ return arr.reduce((a,b)=>a.atk>b.atk?a:b); }
 
 /* 非激光攻击演出 */
 function pointOf(unit){ const r=unitRect(unit); return r?{x:r.left+r.width/2,y:r.top+r.height/2,r}:null; }
+function liveCombatTarget(attacker, target) {
+  if (target && target.alive) return target;
+  if (bossBattle && !bossBattle.over) {
+    if (attacker && attacker.id === 'boss') return bossBattle.allies.filter(x => x.alive).sort((a,b)=>(a.position||0)-(b.position||0))[0] || null;
+    return bossBattle.boss && bossBattle.boss.alive ? bossBattle.boss : null;
+  }
+  if (battle && !battle.over) {
+    const pool = (attacker && attacker.side === 'enemy') ? battle.allies : battle.enemies;
+    return pickTargetFromAlive(pool.filter(x => x.alive));
+  }
+  return null;
+}
 function spawnSwordFlight(attacker,target,color,delay,scale){
-  const a=pointOf(attacker),t=pointOf(target); if(!a||!t)return; const el=document.createElement('div'); el.className='fx-sword'; el.style.left=a.x+'px'; el.style.top=a.y+'px'; el.style.color=color||'#9de7ff'; el.style.opacity='0'; fxLayer().appendChild(el);
-  const dx=t.x-a.x,dy=t.y-a.y,ang=Math.atan2(dy,dx)*180/Math.PI,arc=(Math.random()>.5?-1:1)*(38+Math.random()*34),d=delay||0;
-  setTimeout(()=>{ const anim=el.animate([
-    {opacity:0,transform:`translate(0,0) rotate(${ang}deg) scale(${scale||1})`},
-    {opacity:1,offset:.18,transform:`translate(${dx*.22}px,${dy*.22+arc*.72}px) rotate(${ang+18}deg) scale(${(scale||1)*1.08})`},
-    {opacity:1,offset:.62,transform:`translate(${dx*.67}px,${dy*.67+arc}px) rotate(${ang-12}deg) scale(${scale||1})`},
-    {opacity:0,transform:`translate(${dx}px,${dy}px) rotate(${ang+8}deg) scale(${(scale||1)*.88})`}
-  ],{duration:430,easing:'cubic-bezier(.16,.72,.22,1)'}); anim.onfinish=()=>{el.remove(); spawnCrescentAt(target,color||'#a7e8ff',1);}; },d);
+  const a=pointOf(attacker); if(!a)return; const el=document.createElement('div'); el.className='fx-sword'; el.style.left=a.x+'px'; el.style.top=a.y+'px'; el.style.color=color||'#9de7ff'; el.style.opacity='0'; fxLayer().appendChild(el);
+  const d=delay||0;
+  setTimeout(()=>{
+    const liveTarget=liveCombatTarget(attacker,target), t=pointOf(liveTarget); if(!liveTarget||!t){el.remove();return;}
+    const dx=t.x-a.x,dy=t.y-a.y,ang=Math.atan2(dy,dx)*180/Math.PI,arc=(Math.random()>.5?-1:1)*(38+Math.random()*34);
+    const anim=el.animate([
+      {opacity:0,transform:`translate(0,0) rotate(${ang}deg) scale(${scale||1})`},
+      {opacity:1,offset:.18,transform:`translate(${dx*.22}px,${dy*.22+arc*.72}px) rotate(${ang+18}deg) scale(${(scale||1)*1.08})`},
+      {opacity:1,offset:.62,transform:`translate(${dx*.67}px,${dy*.67+arc}px) rotate(${ang-12}deg) scale(${scale||1})`},
+      {opacity:0,transform:`translate(${dx}px,${dy}px) rotate(${ang+8}deg) scale(${(scale||1)*.88})`}
+    ],{duration:430,easing:'cubic-bezier(.16,.72,.22,1)'});
+    anim.onfinish=()=>{el.remove(); if(liveTarget.alive) spawnCrescentAt(liveTarget,color||'#a7e8ff',1);};
+  },d);
 }
 function spawnCrescentAt(target,color,count){ const p=pointOf(target); if(!p)return; for(let i=0;i<(count||1);i++){setTimeout(()=>{const e=document.createElement('div');e.className='fx-crescent';e.style.left=(p.x+(Math.random()*16-8))+'px';e.style.top=(p.y+(Math.random()*12-6))+'px';e.style.color=color||'#dff7ff';fxLayer().appendChild(e);setTimeout(()=>e.remove(),520);},i*55);} }
 function spawnPalmAt(target,color,glyph){ const p=pointOf(target);if(!p)return;const e=document.createElement('div');e.className='fx-palm';e.style.left=p.x+'px';e.style.top=p.y+'px';e.style.color=color||'#ffd879';e.textContent=glyph||'掌';fxLayer().appendChild(e);setTimeout(()=>e.remove(),650); }
@@ -8296,7 +8419,7 @@ function spawnVenomAt(target){const p=pointOf(target);if(!p)return;const e=docum
 function spawnDivineSealAt(target,glyph,color){const p=pointOf(target);if(!p)return;const e=document.createElement('div');e.className='fx-divine-seal';e.style.left=p.x+'px';e.style.top=p.y+'px';e.style.color=color||'#ffd86b';e.textContent=glyph||'道';fxLayer().appendChild(e);setTimeout(()=>e.remove(),850);}
 
 playAttackFx = function(attacker,target,kind){
-  if(!attacker||!target)return; const isEnemy=kind==='enemy',crit=kind==='crit';
+  if(!attacker||!target)return; target=liveCombatTarget(attacker,target); if(!target)return; const isEnemy=kind==='enemy',crit=kind==='crit';
   const color=isEnemy?'#ff8b80':crit?'#ffd866':'#9fe6ff';
   const caster=document.querySelector(`[data-unit-id="${attacker.id}"]`); if(caster){caster.classList.remove('fx-caster');void caster.offsetWidth;caster.classList.add('fx-caster');setTimeout(()=>caster.classList.remove('fx-caster'),560);}
   if(isEnemy){ spawnPalmAt(target,'#ff807a','煞'); if(Math.random()<.35)spawnSoulAt(target,'#e56f79'); return; }
@@ -8311,6 +8434,7 @@ showDmgFloat = function(unit,dmg,isCrit){
 function skillFxType(name,effect){ const b=SKILL_REFORGE[effect]; if(b&&b.fx)return b.fx; const s=(name||'')+' '+(effect||''); if(/冰|雪|寒/.test(s))return'ice';if(/雷/.test(s))return'thunder';if(/回春|百草|济世|造化|普渡/.test(s))return'lotus';if(/盾|玄武|壁垒/.test(s))return'guard';if(/魔|魂|修罗/.test(s))return'soul';return'sword'; }
 function fxOnTarget(unit,t,type,i){
   if(!t)return; const delay=(i||0)*45; setTimeout(()=>{
+    t = liveCombatTarget(unit, t); if(!t) return;
     if(type==='sword'||type==='swordStorm') { spawnSwordFlight(unit,t,'#9de7ff',0,1); if(type==='swordStorm'){spawnSwordFlight(unit,t,'#d5f4ff',40,.9);spawnSwordFlight(unit,t,'#fff2b0',80,.82);} }
     else if(type==='iceSword'){spawnSwordFlight(unit,t,'#a9efff',0,1);setTimeout(()=>spawnIceAt(t,5),250);}
     else if(type==='fireSword'){spawnSwordFlight(unit,t,'#ff9b64',0,1.08);setTimeout(()=>spawnFlamesAt(t,6),240);}
@@ -8580,8 +8704,8 @@ renderBossBattle = function(){
   __ultimateRenderBossBattle();
   if(!bossBattle)return;
   const cards=document.querySelectorAll('#bossBattleBody .columns:not(.enemy-cols) .unit');
-  cards.forEach((el,i)=>{const u=bossBattle.allies[i];if(u)el.setAttribute('data-unit-id',u.id);});
-  const bossCard=document.querySelector('#bossBattleBody .unit.boss'); if(bossCard)bossCard.setAttribute('data-unit-id','boss');
+  cards.forEach((el,i)=>{const u=bossBattle.allies[i];if(!u)return;if(u.alive)el.setAttribute('data-unit-id',u.id);else el.removeAttribute('data-unit-id');});
+  const bossCard=document.querySelector('#bossBattleBody .unit.boss'); if(bossCard){if(bossBattle.boss.alive)bossCard.setAttribute('data-unit-id','boss');else bossCard.removeAttribute('data-unit-id');}
 };
 function bossHealOne(t,pct){if(!t||!t.alive)return 0;const amt=Math.floor(t.maxHp*pct*daoHealMul()),old=t.hp;t.hp=Math.min(t.maxHp,t.hp+amt);const r=t.hp-old;if(r>0)showHealFloat(t,r);return r;}
 function bossSkillDamage(unit,boss,b){
